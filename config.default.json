@@ -1,0 +1,17 @@
+{
+  "enabled": true,
+  "openrouter_api_key": "",
+  "openrouter_model": "google/gemini-2.0-flash-001",
+  "chatterbox_url": "http://localhost:8004",
+  "voice": "default.wav",
+  "volume": 1.0,
+  "categories": {
+    "session.start": true,
+    "task.complete": true,
+    "task.acknowledge": false,
+    "task.error": true,
+    "input.required": true,
+    "resource.limit": true,
+    "notification": true
+  }
+}

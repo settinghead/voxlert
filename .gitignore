@@ -1,0 +1,5 @@
+config.json
+cache/
+.sound.pid
+__pycache__/
+*.pyc
