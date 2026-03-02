@@ -30,7 +30,7 @@ Claude Code Hook Event
 ## Quick Install
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/voiceforge.git
+git clone https://github.com/settinghead/voiceforge.git
 cd voiceforge
 bash install.sh
 ```
