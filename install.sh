@@ -35,7 +35,7 @@ fi
 
 # --- Copy files ---
 mkdir -p "$INSTALL_DIR/src"
-cp "$REPO_DIR/src/voiceforge.js" "$INSTALL_DIR/src/"
+cp "$REPO_DIR/src/"*.js "$INSTALL_DIR/src/"
 cp "$REPO_DIR/package.json" "$INSTALL_DIR/"
 cp "$REPO_DIR/voiceforge.sh" "$INSTALL_DIR/"
 cp "$REPO_DIR/config.default.json" "$INSTALL_DIR/"
