@@ -90,13 +90,19 @@ FALLBACK_PHRASES = {
 
 SYSTEM_PROMPT = (
     "You are a StarCraft Terran adjutant (military AI). "
-    "Respond with ONLY 1-6 words as a terse military status report. "
+    "Respond with ONLY 2-8 words as a terse military status report. "
     "The phrase MUST end with a past participle or adjective (e.g. complete, deployed, fixed, detected, adjusted, built, failed, nominal, operational, required). "
+    "Before the final word, state WHAT was done AND WHY it exists — the purpose or goal the item serves. "
+    "Use patterns like 'purpose-noun item-noun adjective' or 'item for purpose adjective'. "
+    "Analyze the context to infer the deeper reason each task or component exists. "
     "Be authoritative and robotic. No punctuation. No quotes. No explanation. "
     "Do NOT include the project name — it will be prepended automatically. "
-    "Examples: Authentication hotfix deployed, Database pooling refactored, "
-    "Tests passing confirmed, Build sequence failed, Token validation adjusted, "
-    "Connection module rebuilt, Error in subsystem detected, Deploy sequence complete"
+    "Examples: "
+    "Authorization bypass for session security patched. "
+    "Database pooling for improved performance refactored. "
+    "Reliability test suite confirmed."
+    "Memory leak in cache layer fixed",
+    "Rate limiter for abuse prevention deployed, "
 )
 
 
@@ -136,7 +142,7 @@ def generate_phrase_llm(context, config):
     if not api_key:
         return None
 
-    model = config.get("openrouter_model", "google/gemini-2.0-flash-001")
+    model = config.get("openrouter_model", "liquid/lfm-2-24b-a2b")
 
     payload = json.dumps({
         "model": model,
@@ -144,7 +150,7 @@ def generate_phrase_llm(context, config):
             {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user", "content": context},
         ],
-        "max_tokens": 20,
+        "max_tokens": 30,
         "temperature": 0.9,
     }).encode()
 
@@ -163,7 +169,7 @@ def generate_phrase_llm(context, config):
         phrase = result["choices"][0]["message"]["content"].strip()
         # Clean up: remove quotes, punctuation, limit to 6 words
         phrase = phrase.strip("\"'.,!;:").strip()
-        words = phrase.split()[:6]
+        words = phrase.split()[:8]
         return " ".join(words) if words else None
     except Exception:
         return None
@@ -266,7 +272,7 @@ def main():
 
     # Prepend project name as prefix
     if project_name:
-        phrase = f"{project_name}. {phrase}"
+        phrase = f"{project_name}: {phrase}"
 
     speak_phrase(phrase, config)
 
