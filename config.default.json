@@ -1,5 +1,6 @@
 {
   "enabled": true,
+  "collect_llm_data": true,
   "openrouter_api_key": "",
   "openrouter_model": "google/gemma-3-27b-it",
   "chatterbox_url": "http://localhost:8004",

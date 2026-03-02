@@ -12,12 +12,14 @@ import hashlib
 import subprocess
 import random
 import signal
+import time
 import urllib.request
 import urllib.error
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 CONFIG_PATH = os.path.join(SCRIPT_DIR, "config.json")
 CACHE_DIR = os.path.join(SCRIPT_DIR, "cache")
+COLLECT_DIR = os.path.join(SCRIPT_DIR, "llm_collect")
 PID_FILE = os.path.join(SCRIPT_DIR, ".sound.pid")
 
 # Hook event name -> internal category
@@ -109,6 +111,25 @@ def extract_context(event_data):
     return None
 
 
+def _save_llm_pair(messages, response_text, model, config):
+    """Save an LLM prompt/response pair to disk for fine-tuning data collection."""
+    if not config.get("collect_llm_data", False):
+        return
+    try:
+        os.makedirs(COLLECT_DIR, exist_ok=True)
+        record = {
+            "timestamp": time.time(),
+            "model": model,
+            "messages": messages,
+            "response": response_text,
+        }
+        filename = f"{int(time.time() * 1000)}.json"
+        with open(os.path.join(COLLECT_DIR, filename), "w") as f:
+            json.dump(record, f, indent=2)
+    except Exception:
+        pass
+
+
 def generate_phrase_llm(context, config):
     """Call OpenRouter to generate a contextual 1-3 word phrase."""
     api_key = config.get("openrouter_api_key", "")
@@ -117,12 +138,14 @@ def generate_phrase_llm(context, config):
 
     model = config.get("openrouter_model", "qwen/qwen3.5-flash-02-23")
 
+    messages = [
+        {"role": "system", "content": SYSTEM_PROMPT},
+        {"role": "user", "content": context},
+    ]
+
     payload = json.dumps({
         "model": model,
-        "messages": [
-            {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user", "content": context},
-        ],
+        "messages": messages,
         "max_tokens": 30,
         "temperature": 0.9,
     }).encode()
@@ -140,6 +163,7 @@ def generate_phrase_llm(context, config):
         resp = urllib.request.urlopen(req, timeout=5)
         result = json.loads(resp.read())
         phrase = result["choices"][0]["message"]["content"].strip()
+        _save_llm_pair(messages, phrase, model, config)
         # Clean up: remove quotes, punctuation, limit to 6 words
         phrase = phrase.strip("\"'.,!;:").strip()
         words = phrase.split()[:8]
