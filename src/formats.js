@@ -8,7 +8,7 @@
  */
 
 const DEFAULT_STYLE =
-  "You are a terse AI assistant. Be authoritative and robotic.";
+  "You are a status report assistant.";
 
 const FORMATS = {
   "status-report": [

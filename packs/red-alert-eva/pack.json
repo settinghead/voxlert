@@ -7,7 +7,7 @@
     "cfg_weight": 0.7
   },
   "llm_temperature": 0.5,
-  "style": "Terse military AI. Authoritative, robotic, precise. Use military and deployment vocabulary.",
+  "style": "Terse military, robotic AI. Authoritative, robotic, precise. Use military and deployment vocabulary.",
   "examples": [
     {
       "content": "Fixed auth bug",
