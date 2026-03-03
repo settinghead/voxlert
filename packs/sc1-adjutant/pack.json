@@ -8,6 +8,23 @@
   },
   "llm_temperature": 0.6,
   "style": null,
+  "examples": [
+    {
+      "content": "Fixed auth bug",
+      "format": "status-report",
+      "response": "Authentication subsystem error corrected."
+    },
+    {
+      "content": "Replaced partial snippet with full CLI section listing all commands",
+      "format": "status-report",
+      "response": "Command reference updated. All directives now listed."
+    },
+    {
+      "content": "Added volume compensation — each pack's voice analyzed with ffmpeg on first load",
+      "format": "status-report",
+      "response": "Audio calibration sequence initialized on startup."
+    }
+  ],
   "fallback_phrases": null,
   "ref_text": "Insufficient Vespene gas. Additional supply depots required. Landing sequence interrupted. Unacceptable landing zone. Not enough energy. Base is under attack. Your forces are under attack. Research complete. Add-on complete. Nuclear launch detected. Abandoning auxiliary structure. Upgrade complete. Nuclear missile."
 }
