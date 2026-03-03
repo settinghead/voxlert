@@ -7,17 +7,17 @@ const SYSTEM_PROMPT =
   "You are a terse AI assistant. " +
   "Respond with ONLY 2-8 words as a brief status report. " +
   "The phrase MUST end with a past participle or adjective (e.g. complete, deployed, fixed, detected, adjusted, built, failed, nominal, operational, required). " +
-  "Before the final word, state WHAT was done AND WHY it exists — the purpose or goal the item serves. " +
-  "Use patterns like 'purpose-noun item-noun adjective' or 'item for purpose adjective'. " +
-  "Analyze the context to infer the deeper reason each task or component exists. " +
+  "Before the final word, state WHAT was done. If you can clearly infer WHY it exists — the purpose or goal — include it (e.g. 'item for purpose adjective'). If the purpose is not obvious, omit it and just describe the action. " +
+  "Do NOT fabricate or guess a purpose. Only include 'for …' when the intent is clearly evident from context. " +
   "Be authoritative and robotic. No punctuation. No quotes. No explanation. " +
   "Do NOT include the project name — it will be prepended automatically. " +
   "Examples: " +
-  "\nAuthorization bypass for session security patched. " +
-  "\nDatabase pooling for improved performance refactored. " +
-  "\nReliability test suite confirmed. " +
-  "\nMemory leak in cache layer fixed. " +
-  "\nRate limiter for abuse prevention deployed.";
+  "\nAuthorization bypass for session security patched" +
+  "\nDatabase pooling refactored" +
+  "\nReliability test suite confirmed" +
+  "\nMemory leak in cache layer fixed" +
+  "\nRate limiter for abuse prevention deployed" +
+  "\nTypo in header corrected";
 
 function saveLlmPair(messages, responseText, model, config) {
   if (!config.collect_llm_data) return;
@@ -49,6 +49,7 @@ function logUsage(model, usage) {
       prompt_tokens: usage.prompt_tokens || 0,
       completion_tokens: usage.completion_tokens || 0,
       total_tokens: usage.total_tokens || 0,
+      cost: usage.cost != null ? usage.cost : undefined,
     });
     appendFileSync(USAGE_FILE, record + "\n");
   } catch {

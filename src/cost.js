@@ -2,7 +2,7 @@ import { readFileSync, writeFileSync } from "fs";
 import { USAGE_FILE } from "./paths.js";
 
 // Fallback prices per 1M tokens [prompt, completion] in USD
-// Used only when OpenRouter API is unreachable
+// Used only for old records missing usage.cost and when OpenRouter API is unreachable
 const FALLBACK_PRICES = {
   "google/gemini-2.0-flash-001": [0.10, 0.40],
   "openai/gpt-4o-mini": [0.15, 0.60],
@@ -66,8 +66,9 @@ export async function formatCost() {
     return "No usage recorded yet.";
   }
 
-  const prices = await fetchPricing();
-  const live = priceCache === prices && priceCacheTime > 0;
+  // Check if any entries need price-table estimation
+  const needsEstimation = entries.some((e) => e.cost == null);
+  const prices = needsEstimation ? await fetchPricing() : null;
 
   const byModel = {};
   let totalPrompt = 0;
@@ -76,11 +77,23 @@ export async function formatCost() {
 
   for (const e of entries) {
     const m = e.model || "unknown";
-    if (!byModel[m]) byModel[m] = { prompt: 0, completion: 0, total: 0, calls: 0 };
+    if (!byModel[m]) byModel[m] = { prompt: 0, completion: 0, total: 0, calls: 0, cost: 0, estimated: 0 };
     byModel[m].prompt += e.prompt_tokens || 0;
     byModel[m].completion += e.completion_tokens || 0;
     byModel[m].total += e.total_tokens || 0;
     byModel[m].calls++;
+    if (e.cost != null) {
+      byModel[m].cost += e.cost;
+    } else {
+      // Estimate from price table for old records
+      const mp = prices[m];
+      if (mp) {
+        byModel[m].cost += ((e.prompt_tokens || 0) * mp[0] + (e.completion_tokens || 0) * mp[1]) / 1_000_000;
+        byModel[m].estimated++;
+      } else {
+        byModel[m].estimated++;
+      }
+    }
     totalPrompt += e.prompt_tokens || 0;
     totalCompletion += e.completion_tokens || 0;
     totalTokens += e.total_tokens || 0;
@@ -89,7 +102,7 @@ export async function formatCost() {
   const lines = ["Usage Summary", "=".repeat(40)];
 
   let grandCost = 0;
-  let hasUnknown = false;
+  let totalEstimated = 0;
 
   for (const [model, stats] of Object.entries(byModel)) {
     lines.push(`\nModel: ${model}`);
@@ -97,22 +110,15 @@ export async function formatCost() {
     lines.push(`  Prompt tokens: ${stats.prompt.toLocaleString()}`);
     lines.push(`  Completion tokens: ${stats.completion.toLocaleString()}`);
     lines.push(`  Total tokens: ${stats.total.toLocaleString()}`);
-    const mp = prices[model];
-    if (mp) {
-      const cost = (stats.prompt * mp[0] + stats.completion * mp[1]) / 1_000_000;
-      grandCost += cost;
-      lines.push(`  Estimated cost: $${cost.toFixed(6)}`);
-    } else {
-      hasUnknown = true;
-      lines.push(`  Estimated cost: unknown pricing`);
-    }
+    lines.push(`  Cost: $${stats.cost.toFixed(6)}${stats.estimated ? ` (${stats.estimated} call${stats.estimated > 1 ? "s" : ""} estimated)` : ""}`);
+    grandCost += stats.cost;
+    totalEstimated += stats.estimated;
   }
 
   lines.push(`\n${"=".repeat(40)}`);
   lines.push(`Total calls: ${entries.length}`);
   lines.push(`Total tokens: ${totalTokens.toLocaleString()} (${totalPrompt.toLocaleString()} prompt + ${totalCompletion.toLocaleString()} completion)`);
-  lines.push(`Estimated total cost: $${grandCost.toFixed(6)}${hasUnknown ? " (partial — some models lack pricing)" : ""}`);
-  lines.push(`\nPricing: ${live ? "live from OpenRouter API" : "offline fallback"}`);
+  lines.push(`Total cost: $${grandCost.toFixed(6)}${totalEstimated ? ` (${totalEstimated} call${totalEstimated > 1 ? "s" : ""} estimated from price table)` : ""}`);
 
   return lines.join("\n");
 }
