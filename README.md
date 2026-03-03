@@ -26,17 +26,26 @@ voiceforge voice    # interactive picker
 
 ```mermaid
 flowchart TD
-    A[Claude Code Hook Event] --> B[voiceforge.sh<br><i>bash entry point</i>]
-    B --> C[src/voiceforge.js<br><i>core logic, Node.js</i>]
-    C --> D[OpenRouter LLM<br><i>generates contextual phrase</i>]
-    D --> E[Chatterbox TTS<br><i>text-to-speech, local server</i>]
-    E --> F[ffplay / afplay<br><i>audio playback</i>]
+    A[Claude Code Hook Event] --> B[voiceforge.sh]
+    B --> C[src/voiceforge.js]
+    C --> D{Event type?}
+    D -- "Contextual (e.g. Stop)" --> E[OpenRouter LLM<br><i>generate in-character phrase</i>]
+    D -- "Other events" --> F[Fallback phrases<br><i>from voice pack</i>]
+    E --> G[Chatterbox TTS<br><i>local speech synthesis</i>]
+    F --> G
+    G --> H[Audio processing<br><i>echo · normalize · post-process</i>]
+    H --> I[(Cache<br><i>LRU, keyed by phrase + params</i>)]
+    I --> J[Playback queue<br><i>serial via file lock</i>]
+    J --> K[afplay / paplay]
 ```
 
-1. Claude Code fires a hook event (task complete, error, etc.)
-2. For contextual events, an LLM generates a short in-character phrase based on what happened
-3. The phrase is sent to a local Chatterbox TTS server for speech synthesis
-4. Audio is cached and played back — repeated phrases play instantly
+1. Claude Code fires a hook event — `voiceforge.sh` passes it to `src/voiceforge.js`
+2. The event is mapped to a category and the active voice pack is loaded
+3. Contextual events (e.g. task completion) send context to an OpenRouter LLM, which generates a short in-character phrase; other events use predefined fallback phrases from the pack
+4. The phrase is sent to a local Chatterbox TTS server for speech synthesis with per-pack voice cloning parameters
+5. The resulting audio is post-processed (optional pitch/tempo), echo-filtered, and volume-normalized (sox)
+6. Processed audio is cached on disk — repeated phrases play instantly from cache
+7. A file-based queue with lock ensures serial playback across concurrent hook events
 
 ## Quick Install
 

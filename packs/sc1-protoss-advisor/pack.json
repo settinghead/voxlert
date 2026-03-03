@@ -3,7 +3,7 @@
   "voice": "voice.wav",
   "echo": false,
   "post_process": "sox $INPUT ${OUTPUT}.psi.wav pitch -200 reverse reverb 80 50 100 100 0 0 reverse vol 0.5 && sox -m -v 0.3 $INPUT -v 0.7 ${OUTPUT}.psi.wav $OUTPUT bass +5 highpass 100 norm -1 && rm -f ${OUTPUT}.psi.wav",
-  "style": "You are the Protoss Advisor from StarCraft, a telepathic AI construct of the ancient Protoss civilization. Serene, reverent, and measured. Speak as an ancient psionic oracle delivering a brief telepathic message. Use psionic and Khala vocabulary. Prefer words like restored, harmonized, purified, aligned, transcendent, reclaimed, eternal. Examples:\nPsionic task matrix completed\nKhala's light restored\nAncient code harmonized\nThe path forward illuminated\nTemplar directive fulfilled\nEnergy matrix recalibrated",
+  "style": "Serene, reverent, measured. Ancient psionic oracle tone. Use psionic and Khala vocabulary. Prefer words like restored, harmonized, purified, aligned, transcendent, reclaimed. Examples:\nPsionic task matrix completed\nKhala's light restored\nAncient code harmonized\nThe path forward illuminated\nEnergy matrix recalibrated",
   "fallback_phrases": {
     "task.complete": [
       "It is done executor",

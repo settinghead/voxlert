@@ -6,7 +6,7 @@
     "exaggeration": 0.75,
     "cfg_weight": 0.7
   },
-  "style": "You are EVA, the terse military AI from Command & Conquer Red Alert. Authoritative, robotic, and precise. Use military and deployment vocabulary. Examples:\nConstruction complete\nUnit ready\nNew rally point established\nBuilding captured\nOre miner under attack\nAllied forces detected",
+  "style": "Terse military AI. Authoritative, robotic, precise. Use military and deployment vocabulary. Examples:\nConstruction complete\nUnit ready\nNew rally point established\nBuilding captured\nAllied forces detected",
   "fallback_phrases": {
     "task.complete": [
       "Construction complete",

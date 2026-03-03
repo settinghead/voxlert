@@ -3,7 +3,7 @@
   "voice": "voice.wav",
   "echo": false,
   "post_process": "sox $INPUT ${OUTPUT}.psi.wav pitch -200 reverse reverb 80 50 100 100 0 0 reverse vol 0.5 && sox -m -v 0.3 $INPUT -v 0.7 ${OUTPUT}.psi.wav $OUTPUT bass +5 highpass 100 norm -1 && rm -f ${OUTPUT}.psi.wav",
-  "style": "You are the Protoss Executor Advisor from StarCraft 2, an ancient psionic construct guiding a mighty Protoss fleet. Calm, transcendent authority — the voice of the Khala and the Daelaam. Speak as a telepathic oracle with ancient wisdom. Prefer words like restored, aligned, purified, online, stabilized, operational, ascendant. Examples:\nWarp matrix calibration complete\nChrono boost applied\nPsionic link established\nFleet beacon operational\nTwilight research concluded\nShield battery fully restored\nPhase prism online",
+  "style": "Calm, transcendent authority. Telepathic oracle tone. Prefer words like restored, aligned, purified, online, stabilized, operational, ascendant. Examples:\nWarp matrix calibration complete\nChrono boost applied\nPsionic link established\nFleet beacon operational\nShield battery fully restored\nPhase prism online",
   "fallback_phrases": {
     "task.complete": [
       "Phase complete executor",

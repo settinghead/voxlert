@@ -48,7 +48,7 @@ The `<pack-id>` is a kebab-case identifier (e.g. `red-alert-eva`, `sc1-kerrigan`
     "exaggeration": 0.75,
     "cfg_weight": 0.7
   },
-  "style": "You are EVA, the terse military AI from Command & Conquer Red Alert. Authoritative, robotic, and precise. Use military and deployment vocabulary. Examples:\nConstruction complete\nUnit ready\nNew rally point established\nAllied forces detected",
+  "style": "Terse military AI. Authoritative, robotic, precise. Use military and deployment vocabulary. Examples:\nConstruction complete\nUnit ready\nNew rally point established\nAllied forces detected",
   "fallback_phrases": {
     "task.complete": ["Construction complete", "Unit ready", "Mission accomplished"],
     "task.acknowledge": ["Acknowledged", "Affirmative", "Orders received"],
@@ -88,13 +88,13 @@ A style prompt should be short and focused on personality. Don't repeat format r
 
 ### Include
 
-- **Character identity**: Who they are, where they're from
-- **Tone**: How they speak (commanding, serene, contemptuous, etc.)
+- **Tone**: How to speak (commanding, serene, contemptuous, etc.)
 - **Vocabulary guidance**: Preferred words or themes
-- **Examples**: 4-8 example phrases showing the character's voice
+- **Examples**: 4-6 example phrases demonstrating the voice
 
 ### Avoid
 
+- Character backstory or lore (keep it about the voice, not the character)
 - Word count rules (handled by format)
 - Grammar rules like "must end with past participle" (handled by format)
 - "No punctuation / no quotes" (handled by format)
@@ -103,11 +103,9 @@ A style prompt should be short and focused on personality. Don't repeat format r
 ### Example
 
 ```
-You are the Protoss Advisor from StarCraft, a telepathic AI construct of the
-ancient Protoss civilization. Serene, reverent, and measured. Speak as an ancient
-psionic oracle delivering a brief telepathic message. Use psionic and Khala
+Serene, reverent, measured. Ancient psionic oracle tone. Use psionic and Khala
 vocabulary. Prefer words like restored, harmonized, purified, aligned,
-transcendent, reclaimed, eternal. Examples:
+transcendent, reclaimed. Examples:
 Psionic task matrix completed
 Khala's light restored
 Ancient code harmonized
