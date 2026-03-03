@@ -80,14 +80,14 @@ function configSet(key, value) {
   console.log(`Set ${key} = ${JSON.stringify(coerced)}`);
 }
 
-async function testPipeline(text) {
+async function testPipeline(text, pack) {
   if (!text) {
     console.error("Usage: voiceforge test \"<text>\"");
     process.exit(1);
   }
 
   const config = loadConfig(process.cwd());
-  const pack = loadPack(config);
+  if (!pack) pack = loadPack(config);
 
   console.log(`Input: ${text}`);
   console.log(`Pack: ${pack.name} (${pack.id}), echo: ${pack.echo !== false}`);
@@ -181,6 +181,7 @@ async function voicePick() {
     const match = packs.find((p) => p.id === chosen);
     console.log(`Switched to: ${match.name} (${chosen})`);
   }
+  await greetWithVoice();
 }
 
 function packShow() {
@@ -189,7 +190,13 @@ function packShow() {
   console.log(JSON.stringify(pack, null, 2));
 }
 
-function packUse(packId) {
+async function greetWithVoice() {
+  const config = loadConfig(process.cwd());
+  const pack = loadPack(config);
+  await testPipeline(`You have chosen '${pack.name}' as the new voice. It is now activated.`, pack);
+}
+
+async function packUse(packId) {
   if (!packId) {
     console.error("Usage: voiceforge pack use <pack-id>");
     process.exit(1);
@@ -213,6 +220,7 @@ function packUse(packId) {
   config.active_pack = packId;
   saveConfig(config);
   console.log(`Switched to pack: ${match.name} (${packId})`);
+  await greetWithVoice();
 }
 
 function askLine(prompt) {
@@ -267,7 +275,7 @@ async function setVolume(val) {
       } else if (sub === "show") {
         packShow();
       } else if (sub === "use") {
-        packUse(args[2]);
+        await packUse(args[2]);
       } else {
         packList();
       }
