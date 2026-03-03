@@ -8,5 +8,6 @@
   },
   "llm_temperature": 0.6,
   "style": null,
-  "fallback_phrases": null
+  "fallback_phrases": null,
+  "ref_text": "Our allies base is under attack. Our allies are being attacked. Auxiliary mining units activated. Base is under attack. Unacceptable build location. Nuclear launch detected. Command center upgrade complete. Construction interrupted. Our SCVs are under attack. Your forces are under attack. Game paused. Game resumed. Landing sequence interrupted. Mineral field depleted. Additional supply depots required. Insufficient Vespin gas. Not enough minerals. Not enough energy. Nuclear missile ready. Vespin geyser required for placement. Research complete. Selvaging operation complete. Thor repair sequence complete. Unacceptable landing zone. Upgrade complete. Vespin geyser required for placement."
 }

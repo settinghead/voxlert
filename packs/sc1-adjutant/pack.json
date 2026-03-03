@@ -8,5 +8,6 @@
   },
   "llm_temperature": 0.6,
   "style": null,
-  "fallback_phrases": null
+  "fallback_phrases": null,
+  "ref_text": "Insufficient FES being gas. Additional supply depots required. Landing sequence interrupted. Unacceptable landing zone. Not enough energy. Base is under attack. Your forces are under attack. Research complete. Add on complete. Nuclear launch detected. Abandoning auxiliary structure. Upgrade complete. Nuclear missile."
 }

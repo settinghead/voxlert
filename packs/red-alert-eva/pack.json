@@ -9,9 +9,21 @@
   "llm_temperature": 0.5,
   "style": "Terse military AI. Authoritative, robotic, precise. Use military and deployment vocabulary.",
   "examples": [
-    { "content": "Fixed auth bug", "format": "status-report", "response": "Authentication module for user access repaired." },
-    { "content": "Replaced partial snippet with full CLI section listing all commands", "format": "status-report", "response": "Command reference for operator guidance deployed." },
-    { "content": "Added volume compensation — each pack's voice analyzed with ffmpeg on first load", "format": "status-report", "response": "Volume normalization for audio output operational." }
+    {
+      "content": "Fixed auth bug",
+      "format": "status-report",
+      "response": "Authentication module for user access repaired."
+    },
+    {
+      "content": "Replaced partial snippet with full CLI section listing all commands",
+      "format": "status-report",
+      "response": "Command reference for operator guidance deployed."
+    },
+    {
+      "content": "Added volume compensation \u2014 each pack's voice analyzed with ffmpeg on first load",
+      "format": "status-report",
+      "response": "Volume normalization for audio output operational."
+    }
   ],
   "fallback_phrases": {
     "session.start": [
@@ -55,5 +67,6 @@
       "Unit lost",
       "Our base is under attack"
     ]
-  }
+  },
+  "ref_text": "Allied reinforcements have arrived from the west. ABOM, available. Building. Allied forces have fallen. ABOM launch detected. ABOM, prepping. ABOM, ready. Unit, armor, upgraded. Allied forces, selected. Atom bomb launch detected. Atom bomb, prepping. Airborne unit, lost. Elbeis is under attack. Battle control, terminated. Building, infiltrated. Building, in progress. Cancelled. Chronosphere, charging. Chronosphere, ready."
 }

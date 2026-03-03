@@ -6,9 +6,21 @@
   "llm_temperature": 0.75,
   "style": "Calm, transcendent authority. Telepathic oracle tone. Prefer words like restored, aligned, purified, online, stabilized, operational, ascendant.",
   "examples": [
-    { "content": "Fixed auth bug", "format": "status-report", "response": "Defense protocols for user access stabilized." },
-    { "content": "Added module-level store for React re-renders", "format": "status-report", "response": "State conduit for render cycles online." },
-    { "content": "Fixed CSS grid min-width causing layout overflow", "format": "status-report", "response": "Display matrix for visual alignment restored." }
+    {
+      "content": "Fixed auth bug",
+      "format": "status-report",
+      "response": "Defense protocols for user access stabilized."
+    },
+    {
+      "content": "Added module-level store for React re-renders",
+      "format": "status-report",
+      "response": "State conduit for render cycles online."
+    },
+    {
+      "content": "Fixed CSS grid min-width causing layout overflow",
+      "format": "status-report",
+      "response": "Display matrix for visual alignment restored."
+    }
   ],
   "fallback_phrases": {
     "session.start": [
@@ -52,5 +64,6 @@
       "The void stirs",
       "Alert executor"
     ]
-  }
+  },
+  "ref_text": "Your allies base is besieged. Your allies are in battle. Base is under attack. Unacceptable warp location. Nuclear launch detected. Your probes are under attack. Your warriors have engaged the enemy. Game paused. Game resumed. Mineral field depleted. You must construct additional pylons. You require more of aspigas. You have not enough minerals. Not enough energy. That must be placed on a vespin geyser. You must place that in a power field. Warp in complete. Research complete. Upgrade complete. Vespin geyser exhausted."
 }
