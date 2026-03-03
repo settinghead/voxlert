@@ -194,44 +194,6 @@ bash ~/.claude/hooks/voiceforge/uninstall.sh
 
 This removes hooks from Claude Code settings and cleans up installed files. You'll be prompted to keep or remove your config and cached audio.
 
-## Voice Packs
-
-### Tier 1 — AI / Advisor
-
-| Status | Voice | Source | Notes |
-|--------|-------|--------|-------|
-| ✅ | **EVA** | Command & Conquer | Military AI status updates |
-| 🔜 | **GLaDOS** | Portal | Passive-aggressive task commentary |
-| 🔜 | **Cortana** | Halo | AI companion tactical briefings |
-| 🔜 | **HEV Suit** | Half-Life | Pure status reports |
-| 🔜 | **EDI** | Mass Effect | Ship AI, dry delivery |
-| 🔜 | **SHODAN** | System Shock | Menacing AI overlord |
-| 🔜 | **VEGA** | Doom 2016+ | Calm AI during chaos |
-| 🔜 | **Ghost** | Destiny | Task companion |
-
-### Tier 2 — Iconic Characters
-
-| Status | Voice | Source | Notes |
-|--------|-------|--------|-------|
-| 🔜 | **Colonel Campbell** | Metal Gear Solid | Mission briefing style |
-| 🔜 | **Deckard Cain** | Diablo | Sage advisor |
-| 🔜 | **Central / Bradford** | XCOM | Tactical urgency |
-| 🔜 | **Sean Bean narrator** | Civilization VI | Gravitas, session moments |
-| 🔜 | **Arthas / Kerrigan** | Warcraft III | Peon-ping infrastructure exists |
-| 🔜 | **Announcers** | Dota 2 / LoL | Completion callouts |
-| 🔜 | **Athena** | Overwatch | Clean AI announcer |
-
-### Tier 3 — Fun / Novelty
-
-| Status | Voice | Source | Notes |
-|--------|-------|--------|-------|
-| 🔜 | **Papyrus** | Undertale | Comedic contrast |
-| 🔜 | **PDA** | Subnautica | Resource warnings |
-| 🔜 | **Ship AI** | Dead Space | Horror-toned errors |
-| 🔜 | **Mr. New Vegas / Three Dog** | Fallout | Radio DJ announcing progress |
-
-> ✅ = in place &nbsp; 🚧 = under construction &nbsp; 🔜 = coming soon
-
 ## License
 
 MIT — see [LICENSE](LICENSE).

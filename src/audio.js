@@ -91,10 +91,10 @@ function releaseLock() {
   }
 }
 
-function enqueue(cachePath, volume, echo) {
+function enqueue(cachePath, volume, echo, volumeOffsetDb) {
   mkdirSync(QUEUE_DIR, { recursive: true });
   const filename = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.json`;
-  writeFileSync(join(QUEUE_DIR, filename), JSON.stringify({ cachePath, volume, echo }));
+  writeFileSync(join(QUEUE_DIR, filename), JSON.stringify({ cachePath, volume, echo, volumeOffsetDb }));
 }
 
 function getNextEntry() {
@@ -110,14 +110,23 @@ function getNextEntry() {
 
 // --- Playback ---
 
-function playFile(cachePath, volume, echo) {
+function playFile(cachePath, volume, echo, volumeOffsetDb) {
   return new Promise((resolve) => {
     if (!existsSync(cachePath)) return resolve();
     const volPct = String(Math.round(parseFloat(volume) * 100));
     try {
       const ffplayArgs = ["-nodisp", "-autoexit", "-volume", volPct];
+
+      // Build audio filter chain: volume compensation + optional echo
+      const filters = [];
+      if (volumeOffsetDb && volumeOffsetDb !== 0) {
+        filters.push(`volume=${volumeOffsetDb}dB`);
+      }
       if (echo) {
-        ffplayArgs.push("-af", audioFilter());
+        filters.push(audioFilter());
+      }
+      if (filters.length > 0) {
+        ffplayArgs.push("-af", filters.join(","));
       }
       ffplayArgs.push(cachePath);
 
@@ -150,7 +159,7 @@ async function processQueue() {
           readFileSync(entryPath, "utf-8"),
         );
         unlinkSync(entryPath);
-        await playFile(entry_data.cachePath, entry_data.volume, entry_data.echo !== false);
+        await playFile(entry_data.cachePath, entry_data.volume, entry_data.echo !== false, entry_data.volumeOffsetDb || 0);
       } catch {
         try {
           unlinkSync(entryPath);
@@ -235,6 +244,7 @@ export async function speakPhrase(phrase, config, pack) {
   const maxCache = config.max_cache_entries ?? DEFAULT_MAX_CACHE;
   const echo = pack ? pack.echo !== false : true;
   const voicePath = (pack && pack.voicePath) || config.voice || "default.wav";
+  const volumeOffsetDb = (pack && pack.volumeOffsetDb) || 0;
 
   // Ensure audio is in cache
   if (existsSync(cachePath)) {
@@ -246,6 +256,6 @@ export async function speakPhrase(phrase, config, pack) {
   }
 
   // Enqueue and try to become the player
-  enqueue(cachePath, volume, echo);
+  enqueue(cachePath, volume, echo, volumeOffsetDb);
   await processQueue();
 }

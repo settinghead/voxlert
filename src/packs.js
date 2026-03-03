@@ -1,6 +1,59 @@
-import { readFileSync, readdirSync, existsSync } from "fs";
+import { readFileSync, writeFileSync, readdirSync, existsSync } from "fs";
 import { join, resolve } from "path";
+import { execSync } from "child_process";
 import { PACKS_DIR } from "./paths.js";
+
+// Target mean volume in dBFS — voices are normalized to this level
+const TARGET_MEAN_DB = -16;
+
+/**
+ * Analyze a WAV file's mean volume using ffmpeg volumedetect.
+ * Returns mean_volume in dBFS, or null on failure.
+ */
+function analyzeVolume(wavPath) {
+  try {
+    const output = execSync(
+      `ffmpeg -i "${wavPath}" -af volumedetect -f null /dev/null 2>&1`,
+      { encoding: "utf-8", timeout: 10000 },
+    );
+    const match = output.match(/mean_volume:\s*([-\d.]+)\s*dB/);
+    if (match) return parseFloat(match[1]);
+  } catch {
+    // ffmpeg not available or analysis failed
+  }
+  return null;
+}
+
+/**
+ * Get volume offset in dB for a pack's voice file.
+ * Caches result in .volume file next to voice.wav.
+ */
+function getVolumeOffsetDb(voicePath, packDir) {
+  if (!voicePath || !existsSync(voicePath)) return 0;
+
+  // Check cache
+  const cachePath = join(packDir, ".volume");
+  try {
+    const cached = JSON.parse(readFileSync(cachePath, "utf-8"));
+    if (cached.voicePath === voicePath && typeof cached.offsetDb === "number") {
+      return cached.offsetDb;
+    }
+  } catch {
+    // no cache or invalid
+  }
+
+  // Analyze and cache
+  const meanDb = analyzeVolume(voicePath);
+  if (meanDb == null) return 0;
+
+  const offsetDb = Math.round((TARGET_MEAN_DB - meanDb) * 10) / 10;
+  try {
+    writeFileSync(cachePath, JSON.stringify({ voicePath, meanDb, offsetDb }) + "\n");
+  } catch {
+    // best-effort caching
+  }
+  return offsetDb;
+}
 
 /**
  * Load a voice pack by id (from config.active_pack).
@@ -17,6 +70,7 @@ export function loadPack(config) {
       name: "Legacy",
       echo: true,
       voicePath: config.voice || "default.wav",
+      volumeOffsetDb: 0,
       system_prompt: null,
       fallback_phrases: null,
     };
@@ -35,6 +89,7 @@ export function loadPack(config) {
       name: packId,
       echo: true,
       voicePath: config.voice || "default.wav",
+      volumeOffsetDb: 0,
       system_prompt: null,
       fallback_phrases: null,
     };
@@ -54,6 +109,7 @@ export function loadPack(config) {
     name: packData.name || packId,
     echo: packData.echo !== false,
     voicePath,
+    volumeOffsetDb: getVolumeOffsetDb(voicePath, packDir),
     system_prompt: packData.system_prompt || null,
     fallback_phrases: packData.fallback_phrases || null,
   };
