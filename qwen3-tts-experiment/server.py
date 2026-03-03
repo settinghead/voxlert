@@ -4,6 +4,7 @@ import os
 import io
 import json
 import asyncio
+import threading
 from pathlib import Path
 
 import soundfile as sf
@@ -25,6 +26,7 @@ model = None
 model_name = None
 pack_meta: dict[str, dict] = {}      # MLX: pack_id -> {ref_audio, ref_text}
 prompt_cache: dict[str, list] = {}    # PyTorch: pack_id -> VoiceClonePromptItem list
+_model_lock = threading.Lock()        # Serialize inference — MLX/PyTorch not thread-safe
 
 # ---------------------------------------------------------------------------
 # MLX backend
@@ -69,16 +71,17 @@ def _generate_mlx(text: str, ref_audio: str, ref_text: str) -> tuple[bytes, int]
     """Run MLX generation, return (wav_bytes, sample_rate)."""
     import numpy as np
 
-    chunks = []
-    sample_rate = None
-    for result in model.generate(
-        text=text,
-        ref_audio=ref_audio,
-        ref_text=ref_text,
-    ):
-        chunks.append(np.array(result.audio))
-        if sample_rate is None:
-            sample_rate = result.sample_rate
+    with _model_lock:
+        chunks = []
+        sample_rate = None
+        for result in model.generate(
+            text=text,
+            ref_audio=ref_audio,
+            ref_text=ref_text,
+        ):
+            chunks.append(np.array(result.audio))
+            if sample_rate is None:
+                sample_rate = result.sample_rate
 
     audio = np.concatenate(chunks)
     buf = io.BytesIO()
@@ -142,11 +145,12 @@ def _cache_pack_prompts():
 
 def _generate_pytorch(text: str, voice_clone_prompt) -> bytes:
     """Run PyTorch generation, return wav bytes."""
-    wavs, sr = model.generate_voice_clone(
-        text=text,
-        language="English",
-        voice_clone_prompt=voice_clone_prompt,
-    )
+    with _model_lock:
+        wavs, sr = model.generate_voice_clone(
+            text=text,
+            language="English",
+            voice_clone_prompt=voice_clone_prompt,
+        )
     buf = io.BytesIO()
     sf.write(buf, wavs[0], sr, subtype="PCM_16", format="WAV")
     return buf.getvalue()
