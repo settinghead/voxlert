@@ -13,9 +13,10 @@ import { request as httpsRequest } from "https";
 import { request as httpRequest } from "http";
 import { CACHE_DIR, QUEUE_DIR, LOCK_FILE } from "./paths.js";
 
-function echoFilter() {
+function audioFilter() {
   // Short multi-tap echo: two taps at 40ms and 75ms with moderate decay
-  return "aecho=0.8:0.88:40|75:0.4|0.25";
+  // Pad 100ms of silence so ffplay -autoexit doesn't clip the echo tail
+  return "aecho=0.8:0.88:40|75:0.4|0.25,apad=pad_dur=0.1";
 }
 
 // --- File-based playback queue ---
@@ -84,7 +85,7 @@ function playFile(cachePath, volume) {
           "-volume",
           volPct,
           "-af",
-          echoFilter(),
+          audioFilter(),
           cachePath,
         ],
         { stdio: ["ignore", "ignore", "ignore"] },
