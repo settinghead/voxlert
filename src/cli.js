@@ -3,6 +3,7 @@
 import { readFileSync } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
+import { createInterface } from "readline";
 import select from "@inquirer/select";
 import { loadConfig, saveConfig, FALLBACK_PHRASES } from "./config.js";
 import { generatePhraseLlm } from "./llm.js";
@@ -26,6 +27,8 @@ Usage:
   voiceforge pack list           List available voice packs
   voiceforge pack show           Show active pack details
   voiceforge pack use <pack-id>  Switch active voice pack
+  voiceforge volume              Show current volume and prompt for new value
+  voiceforge volume <0-100>      Set playback volume (0 = mute, 100 = max)
   voiceforge test "<text>"       Run full pipeline: LLM -> TTS -> audio playback
   voiceforge cost                Show accumulated token usage and estimated cost
   voiceforge cost reset          Clear the usage log
@@ -190,6 +193,35 @@ function packUse(packId) {
   console.log(`Switched to pack: ${match.name} (${packId})`);
 }
 
+function askLine(prompt) {
+  return new Promise((resolve) => {
+    const rl = createInterface({ input: process.stdin, output: process.stdout });
+    rl.question(prompt, (answer) => { rl.close(); resolve(answer.trim()); });
+  });
+}
+
+async function setVolume(val) {
+  let num;
+  if (val == null || val === "") {
+    const config = loadConfig();
+    const current = Math.round((config.volume ?? 0.5) * 100);
+    const answer = await askLine(`Current volume: ${current}. Enter new volume (0-100): `);
+    num = Number(answer);
+  } else {
+    num = Number(val);
+  }
+
+  if (isNaN(num) || num < 0 || num > 100) {
+    console.error("Volume must be a number between 0 and 100.");
+    process.exit(1);
+  }
+
+  const config = loadConfig();
+  config.volume = num / 100;
+  saveConfig(config);
+  console.log(`Volume set to ${num}%`);
+}
+
 // --- Main ---
 (async () => {
   const args = process.argv.slice(2);
@@ -217,6 +249,11 @@ function packUse(packId) {
       } else {
         packList();
       }
+      break;
+
+    case "volume":
+    case "vol":
+      await setVolume(args[1]);
       break;
 
     case "voice":
