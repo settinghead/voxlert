@@ -152,12 +152,21 @@ Edit `~/.claude/hooks/voiceforge/config.json`:
 
 You can also use the `/voiceforge-config` slash command in Claude Code to manage configuration interactively.
 
-### CLI Commands
+## CLI
 
 ```bash
-voiceforge voice                  # Interactive voice picker
+voiceforge voice                  # Interactive voice picker (arrow keys + enter)
 voiceforge pack list              # List available voice packs
+voiceforge pack show              # Show active pack details
 voiceforge pack use <pack-id>     # Switch active voice pack
+voiceforge config                 # Show current configuration
+voiceforge config set <key> <val> # Set a config value (supports dot notation, e.g. categories.notification)
+voiceforge config path            # Print config file path
+voiceforge test "<text>"          # Run full pipeline: LLM -> TTS -> playback
+voiceforge cost                   # Show accumulated token usage and estimated cost
+voiceforge cost reset             # Clear the usage log
+voiceforge help                   # Show help
+voiceforge --version              # Show version
 ```
 
 ## Event Categories
