@@ -54,7 +54,7 @@ export function extractContext(eventData) {
   if (event === "Stop") {
     const msg = eventData.last_assistant_message || "";
     if (msg) {
-      return `Coding task completed. Assistant's summary: ${msg.slice(0, 300)}`;
+      return `${msg.slice(0, 300)}`;
     }
     return null;
   }

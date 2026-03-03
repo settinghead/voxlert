@@ -93,7 +93,7 @@ async function testPipeline(text) {
   console.log(`Pack: ${pack.name} (${pack.id}), echo: ${pack.echo !== false}`);
   console.log("Generating phrase via LLM...");
 
-  const context = `Coding task completed. Assistant's summary: ${text}`;
+  const context = `${text}`;
   const result = await generatePhrase(context, config, pack.style, pack.llm_temperature, pack.examples);
 
   let phrase;
