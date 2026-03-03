@@ -128,9 +128,9 @@ function playFile(cachePath, volume, echo, volumeOffsetDb, customAudioFilter) {
       } else if (echo) {
         filters.push(audioFilter());
       }
-      if (filters.length > 0) {
-        ffplayArgs.push("-af", filters.join(","));
-      }
+      // Always normalize loudness in real-time
+      filters.push("dynaudnorm=f=150:g=5:p=0.95:m=10");
+      ffplayArgs.push("-af", filters.join(","));
       ffplayArgs.push(cachePath);
 
       const proc = spawn("ffplay", ffplayArgs, {
