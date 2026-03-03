@@ -1,9 +1,13 @@
-import { writeFileSync, appendFileSync, mkdirSync } from "fs";
-import { join } from "path";
+import { readFileSync, writeFileSync, appendFileSync, mkdirSync } from "fs";
+import { join, dirname } from "path";
+import { fileURLToPath } from "url";
 import { request as httpsRequest } from "https";
 import { request as httpRequest } from "http";
 import { COLLECT_DIR, STATE_DIR, USAGE_FILE } from "./paths.js";
 import { buildSystemPrompt } from "./formats.js";
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const pkg = JSON.parse(readFileSync(join(__dirname, "..", "package.json"), "utf-8"));
 
 function saveLlmPair(messages, responseText, model, config) {
   if (!config.collect_llm_data) return;
@@ -11,6 +15,7 @@ function saveLlmPair(messages, responseText, model, config) {
     mkdirSync(COLLECT_DIR, { recursive: true });
     const record = {
       timestamp: Date.now() / 1000,
+      version: pkg.version,
       model,
       messages,
       response: responseText,

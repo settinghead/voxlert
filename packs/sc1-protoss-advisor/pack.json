@@ -6,9 +6,9 @@
   "llm_temperature": 0.75,
   "style": "Serene, reverent, measured. Ancient psionic oracle tone. Use psionic and Khala vocabulary. Prefer words like restored, harmonized, purified, aligned, transcendent, reclaimed.",
   "examples": [
-    { "content": "Fixed broken test suite", "format": "status-report", "response": "Testing matrix restored" },
-    { "content": "Refactored data pipeline", "format": "status-report", "response": "Data pathways harmonized" },
-    { "content": "Updated dependencies", "format": "status-report", "response": "Ancient bindings recalibrated" }
+    { "content": "Fixed auth bug", "format": "status-report", "response": "Security matrix for user access restored" },
+    { "content": "Added volume compensation with ffmpeg analysis", "format": "status-report", "response": "Harmonic balance for voice output recalibrated" },
+    { "content": "Switched TTS endpoint to custom Chatterbox route", "format": "status-report", "response": "Communication pathways for voice synthesis aligned" }
   ],
   "fallback_phrases": {
     "session.start": [

@@ -5,9 +5,9 @@
   "llm_temperature": 0.9,
   "style": "Dark, otherworldly, absolute. Cold apex-predator tone. Prefer words like consumed, inevitable, eternal, devoured, annihilated, futile.",
   "examples": [
-    { "content": "Fixed authentication bug", "format": "status-report", "response": "Flaw in defenses annihilated" },
-    { "content": "Completed database migration", "format": "status-report", "response": "Old structures consumed" },
-    { "content": "Resolved merge conflicts", "format": "status-report", "response": "Resistance rendered futile" }
+    { "content": "Fixed auth bug", "format": "status-report", "response": "Auth flaw for access control annihilated" },
+    { "content": "Reorganized voice list and added Available/Planned status", "format": "status-report", "response": "Voice registry for eternal order consumed" },
+    { "content": "Fixed CSS grid min-width causing layout overflow", "format": "status-report", "response": "Layout defiance rendered futile" }
   ],
   "fallback_phrases": {
     "session.start": [

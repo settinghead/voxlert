@@ -6,9 +6,9 @@
   "llm_temperature": 0.75,
   "style": "Calm, transcendent authority. Telepathic oracle tone. Prefer words like restored, aligned, purified, online, stabilized, operational, ascendant.",
   "examples": [
-    { "content": "Fixed CI pipeline failure", "format": "status-report", "response": "Build conduit stabilized" },
-    { "content": "Added monitoring dashboard", "format": "status-report", "response": "Sensor array online" },
-    { "content": "Migrated to new framework", "format": "status-report", "response": "Systems realigned" }
+    { "content": "Fixed auth bug", "format": "status-report", "response": "Defense protocols for user access stabilized" },
+    { "content": "Added module-level store for React re-renders", "format": "status-report", "response": "State conduit for render cycles online" },
+    { "content": "Fixed CSS grid min-width causing layout overflow", "format": "status-report", "response": "Display matrix for visual alignment restored" }
   ],
   "fallback_phrases": {
     "session.start": [

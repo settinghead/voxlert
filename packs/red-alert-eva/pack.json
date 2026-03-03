@@ -9,9 +9,9 @@
   "llm_temperature": 0.5,
   "style": "Terse military AI. Authoritative, robotic, precise. Use military and deployment vocabulary.",
   "examples": [
-    { "content": "Fixed broken API endpoint", "format": "status-report", "response": "Endpoint repairs complete" },
-    { "content": "Added user authentication", "format": "status-report", "response": "Security protocol deployed" },
-    { "content": "Refactored database layer", "format": "status-report", "response": "Infrastructure restructured" }
+    { "content": "Fixed auth bug", "format": "status-report", "response": "Authentication module for user access repaired" },
+    { "content": "Replaced partial snippet with full CLI section listing all commands", "format": "status-report", "response": "Command reference for operator guidance deployed" },
+    { "content": "Added volume compensation — each pack's voice analyzed with ffmpeg on first load", "format": "status-report", "response": "Volume normalization for audio output operational" }
   ],
   "fallback_phrases": {
     "session.start": [
