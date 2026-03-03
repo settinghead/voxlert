@@ -117,11 +117,9 @@ function playFile(cachePath, volume, echo, volumeOffsetDb, customAudioFilter) {
     try {
       const ffplayArgs = ["-nodisp", "-autoexit", "-volume", volPct];
 
-      // Build audio filter chain: volume compensation + custom/default echo
+      // Build audio filter chain: custom/default echo
+      // Volume normalization is handled offline by sox norm at cache time
       const filters = [];
-      if (volumeOffsetDb && volumeOffsetDb !== 0) {
-        filters.push(`volume=${volumeOffsetDb}dB`);
-      }
       if (customAudioFilter) {
         filters.push(customAudioFilter);
       } else if (echo) {
@@ -244,8 +242,9 @@ function normalizeVolume(cachePath) {
   if (!existsSync(cachePath)) return;
   const tmpOut = cachePath + ".norm.wav";
   try {
+    // Simple peak normalization to -3dB headroom — no look-ahead artifacts
     execSync(
-      `ffmpeg -y -i "${cachePath}" -af loudnorm=I=-16:LRA=11:TP=-1.5 "${tmpOut}"`,
+      `sox "${cachePath}" "${tmpOut}" norm -3`,
       { timeout: 10000, stdio: "ignore" },
     );
     if (existsSync(tmpOut)) {
