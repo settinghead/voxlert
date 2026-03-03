@@ -12,19 +12,19 @@ Voice packs for [Claude Code](https://docs.anthropic.com/en/docs/claude-code) an
 
 ## Voices
 
-| Pack ID | Voice | Source | Status |
-|---------|-------|--------|--------|
-| `sc1-adjutant` | **SC1 Adjutant** | StarCraft | ✅ Available |
-| `sc2-adjutant` | **SC2 Adjutant** | StarCraft II | ✅ Available |
-| `red-alert-eva` | **EVA** | Command & Conquer: Red Alert | ✅ Available |
-| `sc1-kerrigan` | **SC1 Kerrigan** | StarCraft | ✅ Available |
-| `sc2-kerrigan` | **SC2 Kerrigan** | StarCraft II | ✅ Available |
-| `sc1-protoss-advisor` | **Protoss Advisor** | StarCraft | ✅ Available |
-| `ss1-shodan` | **SHODAN** | System Shock | ✅ Available |
-| | **GLaDOS** | Portal | 🔜 Planned |
-| | **Cortana** | Halo | 🔜 Planned |
-| | **HEV Suit** | Half-Life | 🔜 Planned |
-| | **Deckard Cain** | Diablo | 🔜 Planned |
+| | Pack ID | Voice | Source | Status |
+|---|---------|-------|--------|--------|
+| <img src="assets/sc1-adjutant.gif" width="48" height="48" /> | `sc1-adjutant` | **SC1 Adjutant** | StarCraft | ✅ Available |
+| <img src="assets/sc2-adjutant.jpg" width="48" height="48" /> | `sc2-adjutant` | **SC2 Adjutant** | StarCraft II | ✅ Available |
+| <img src="assets/red-alert-eva.png" width="48" height="48" /> | `red-alert-eva` | **EVA** | Command & Conquer: Red Alert | ✅ Available |
+| <img src="assets/sc1-kerrigan.gif" width="48" height="48" /> | `sc1-kerrigan` | **SC1 Kerrigan** | StarCraft | ✅ Available |
+| <img src="assets/sc2-kerrigan.jpg" width="48" height="48" /> | `sc2-kerrigan` | **SC2 Kerrigan** | StarCraft II | ✅ Available |
+| <img src="assets/sc1-protoss-advisor.jpg" width="48" height="48" /> | `sc1-protoss-advisor` | **Protoss Advisor** | StarCraft | ✅ Available |
+| <img src="assets/ss1-shodan.png" width="48" height="48" /> | `ss1-shodan` | **SHODAN** | System Shock | ✅ Available |
+| <img src="assets/hl-hev-suit.png" width="48" height="48" /> | `hl-hev-suit` | **HEV Suit** | Half-Life | ✅ Available |
+| <img src="assets/glados.png" width="48" height="48" /> | | **GLaDOS** | Portal | 🔜 Planned |
+| <img src="assets/cortana.png" width="48" height="48" /> | | **Cortana** | Halo | 🔜 Planned |
+| <img src="assets/deckard-cain.png" width="48" height="48" /> | | **Deckard Cain** | Diablo | 🔜 Planned |
 
 ```bash
 voiceforge voice    # interactive picker
