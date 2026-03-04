@@ -1,10 +1,11 @@
 """Qwen3-TTS FastAPI server for VoiceForge — dual MLX / PyTorch backend."""
 
 import os
+import gc
 import io
 import json
 import asyncio
-import threading
+import concurrent.futures
 from pathlib import Path
 
 import soundfile as sf
@@ -26,7 +27,10 @@ model = None
 model_name = None
 pack_meta: dict[str, dict] = {}      # MLX: pack_id -> {ref_audio, ref_text}
 prompt_cache: dict[str, list] = {}    # PyTorch: pack_id -> VoiceClonePromptItem list
-_model_lock = threading.Lock()        # Serialize inference — MLX/PyTorch not thread-safe
+
+# Single-thread executor — keeps all GPU work on ONE thread to respect
+# Metal thread affinity (MLX) and MPS requirements (PyTorch).
+_gpu_executor = concurrent.futures.ThreadPoolExecutor(max_workers=1, thread_name_prefix="gpu")
 
 # ---------------------------------------------------------------------------
 # MLX backend
@@ -67,23 +71,27 @@ def _read_pack_meta():
     print(f"Pack metadata ready — {len(pack_meta)} packs")
 
 
-def _generate_mlx(text: str, ref_audio: str, ref_text: str) -> tuple[bytes, int]:
-    """Run MLX generation, return (wav_bytes, sample_rate)."""
+def _generate_mlx(text: str, ref_audio: str, ref_text: str) -> bytes:
+    """Run MLX generation, return wav bytes."""
+    import mlx.core as mx
     import numpy as np
 
-    with _model_lock:
-        chunks = []
-        sample_rate = None
-        for result in model.generate(
-            text=text,
-            ref_audio=ref_audio,
-            ref_text=ref_text,
-        ):
-            chunks.append(np.array(result.audio))
-            if sample_rate is None:
-                sample_rate = result.sample_rate
+    chunks = []
+    sample_rate = None
+    for result in model.generate(
+        text=text,
+        ref_audio=ref_audio,
+        ref_text=ref_text,
+    ):
+        chunks.append(np.array(result.audio))
+        if sample_rate is None:
+            sample_rate = result.sample_rate
 
     audio = np.concatenate(chunks)
+    del chunks
+    mx.clear_cache()
+    gc.collect()
+
     buf = io.BytesIO()
     sf.write(buf, audio, sample_rate, subtype="PCM_16", format="WAV")
     return buf.getvalue()
@@ -145,12 +153,11 @@ def _cache_pack_prompts():
 
 def _generate_pytorch(text: str, voice_clone_prompt) -> bytes:
     """Run PyTorch generation, return wav bytes."""
-    with _model_lock:
-        wavs, sr = model.generate_voice_clone(
-            text=text,
-            language="English",
-            voice_clone_prompt=voice_clone_prompt,
-        )
+    wavs, sr = model.generate_voice_clone(
+        text=text,
+        language="English",
+        voice_clone_prompt=voice_clone_prompt,
+    )
     buf = io.BytesIO()
     sf.write(buf, wavs[0], sr, subtype="PCM_16", format="WAV")
     return buf.getvalue()
@@ -178,14 +185,17 @@ class TTSRequest(BaseModel):
 
 @app.post("/tts")
 async def tts(req: TTSRequest):
+    loop = asyncio.get_running_loop()
+
     if RUNTIME == "mlx":
         if req.pack_id not in pack_meta:
             raise HTTPException(404, f"Unknown pack_id: {req.pack_id}")
         meta = pack_meta[req.pack_id]
         try:
             wav_bytes = await asyncio.wait_for(
-                asyncio.to_thread(
-                    _generate_mlx, req.text, meta["ref_audio"], meta["ref_text"]
+                loop.run_in_executor(
+                    _gpu_executor,
+                    _generate_mlx, req.text, meta["ref_audio"], meta["ref_text"],
                 ),
                 timeout=TTS_TIMEOUT,
             )
@@ -196,8 +206,9 @@ async def tts(req: TTSRequest):
             raise HTTPException(404, f"Unknown pack_id: {req.pack_id}")
         try:
             wav_bytes = await asyncio.wait_for(
-                asyncio.to_thread(
-                    _generate_pytorch, req.text, prompt_cache[req.pack_id]
+                loop.run_in_executor(
+                    _gpu_executor,
+                    _generate_pytorch, req.text, prompt_cache[req.pack_id],
                 ),
                 timeout=TTS_TIMEOUT,
             )
