@@ -11,6 +11,7 @@ import { appendFileSync, mkdirSync } from "fs";
 import { loadConfig, EVENT_MAP, CONTEXTUAL_EVENTS, FALLBACK_PHRASES } from "./config.js";
 import { extractContext, generatePhrase } from "./llm.js";
 import { speakPhrase } from "./audio.js";
+import { showOverlay } from "./overlay.js";
 import { loadPack } from "./packs.js";
 import { STATE_DIR, LOG_FILE } from "./paths.js";
 
@@ -76,12 +77,23 @@ export async function processHookEvent(eventData) {
 
   // Prepend prefix (supports ${dirname} template variable)
   const prefixTemplate = config.prefix !== undefined ? config.prefix : "${dirname}";
+  let resolvedPrefix = "";
   if (prefixTemplate !== "") {
-    const prefix = prefixTemplate.replace(/\$\{dirname\}/g, projectName);
-    if (prefix) {
-      phrase = `${prefix}; ${phrase}`;
+    resolvedPrefix = prefixTemplate.replace(/\$\{dirname\}/g, projectName);
+    if (resolvedPrefix) {
+      phrase = `${resolvedPrefix}; ${phrase}`;
     }
   }
+
+  const packId = config.active_pack || "sc2-adjutant";
+  showOverlay(phrase, {
+    category,
+    packName: pack.name,
+    packId: pack.id || packId,
+    prefix: resolvedPrefix,
+    config,
+    overlayColors: pack.overlay_colors,
+  });
 
   await speakPhrase(phrase, config, pack);
 }

@@ -1,5 +1,6 @@
 {
   "name": "StarCraft 2 Protoss Advisor",
+  "overlay_colors": [[0.7, 0.6, 0.1], [0.3, 0.3, 0.7]],
   "voice": "voice.wav",
   "echo": false,
   "post_process": "sox $INPUT ${OUTPUT}.psi.wav pitch -200 reverse reverb 80 50 100 100 0 0 reverse vol 0.5 && sox -m -v 0.3 $INPUT -v 0.7 ${OUTPUT}.psi.wav $OUTPUT bass +5 highpass 100 norm -1 && rm -f ${OUTPUT}.psi.wav",

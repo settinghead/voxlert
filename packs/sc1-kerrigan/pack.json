@@ -1,5 +1,6 @@
 {
   "name": "StarCraft 1 Kerrigan",
+  "overlay_colors": [[0.5, 0.1, 0.6], [0.3, 0.0, 0.4]],
   "voice": "voice.wav",
   "echo": false,
   "llm_temperature": 0.85,

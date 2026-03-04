@@ -1,6 +1,6 @@
 
 <p align="center">
-  <img src="assets/logo.png" alt="VoiceForge Logo" width="60%" />
+  <video src="https://github.com/settinghead/voiceforge/raw/main/assets/demo.mp4" width="100%" controls muted></video>
 </p>
 
 # VoiceForge

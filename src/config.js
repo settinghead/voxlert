@@ -72,6 +72,8 @@ const PROJECT_OVERRIDE_FIELDS = new Set([
   "prefix",
   "tts_backend",
   "qwen_tts_url",
+  "overlay",
+  "overlay_dismiss",
 ]);
 
 /**

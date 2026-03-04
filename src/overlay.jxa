@@ -1,0 +1,202 @@
+/**
+ * VoiceForge — Native macOS overlay notification.
+ *
+ * Usage:
+ *   osascript -l JavaScript overlay.jxa <message> <gradient_json> <icon_path> <slot> <dismiss_secs> [subtitle]
+ *
+ * Arguments:
+ *   message        — Main phrase text
+ *   gradient_json  — JSON array of [r,g,b] triples (0-1), e.g. '[[0.1,0.4,0.7],[0.05,0.2,0.5]]'
+ *   icon_path      — Absolute path to character icon (or "" for no icon)
+ *   slot           — Vertical slot index (0-4)
+ *   dismiss_secs   — Seconds before auto-dismiss
+ *   subtitle       — Optional subtitle text (project name · character)
+ */
+
+ObjC.import("Cocoa");
+ObjC.import("QuartzCore");
+
+function run(argv) {
+  var message = argv[0] || "Notification";
+  var gradientJson = argv[1] || "[[0.15,0.15,0.2],[0.1,0.1,0.15]]";
+  var iconPath = argv[2] || "";
+  var slot = parseInt(argv[3], 10) || 0;
+  var dismissSecs = parseFloat(argv[4]) || 4;
+  var subtitle = argv[5] || "";
+
+  // Parse gradient colors
+  var colors;
+  try {
+    colors = JSON.parse(gradientJson);
+  } catch (e) {
+    colors = [[0.15, 0.15, 0.2], [0.1, 0.1, 0.15]];
+  }
+
+  // Ensure we have at least 2 color stops
+  if (!Array.isArray(colors) || colors.length < 2) {
+    colors = [[0.15, 0.15, 0.2], [0.1, 0.1, 0.15]];
+  }
+
+  // Window dimensions
+  var winWidth = 500;
+  var winHeight = 80;
+  var cornerRadius = 12;
+  var iconSize = 48;
+  var iconPadding = 16;
+
+  // Get screen geometry
+  var screen = $.NSScreen.mainScreen;
+  var frame = screen.visibleFrame;
+  var screenWidth = frame.size.width;
+  var screenTop = frame.origin.y + frame.size.height;
+
+  // Position: top-center, stacked by slot
+  var x = (screenWidth - winWidth) / 2 + frame.origin.x;
+  var slotGap = winHeight + 8;
+  var y = screenTop - winHeight - 12 - (slot * slotGap);
+
+  // Create borderless, always-on-top window
+  var winRect = $.NSMakeRect(x, y, winWidth, winHeight);
+  var styleMask = $.NSWindowStyleMaskBorderless;
+  var win = $.NSWindow.alloc.initWithContentRectStyleMaskBackingDefer(
+    winRect, styleMask, $.NSBackingStoreBuffered, false
+  );
+  win.setLevel($.NSStatusWindowLevel + 1);
+  win.setOpaque(false);
+  win.setAlphaValue(0.95);
+  win.setBackgroundColor($.NSColor.clearColor);
+  win.setHasShadow(true);
+  win.setIgnoresMouseEvents(true);
+
+  // Content view with rounded corners
+  var contentView = win.contentView;
+  contentView.wantsLayer = true;
+  var layer = contentView.layer;
+  layer.cornerRadius = cornerRadius;
+  layer.masksToBounds = true;
+
+  // Animated gradient background
+  var gradientLayer = $.CAGradientLayer.layer;
+  gradientLayer.frame = layer.bounds;
+
+  // Build NSColor array for gradient
+  var nsColors = $.NSMutableArray.alloc.init;
+  for (var i = 0; i < colors.length; i++) {
+    var c = colors[i];
+    var r = c[0] || 0, g = c[1] || 0, b = c[2] || 0;
+    var nsColor = $.NSColor.colorWithCalibratedRedGreenBlueAlpha(r, g, b, 1.0);
+    nsColors.addObject(nsColor.CGColor);
+  }
+  gradientLayer.colors = nsColors;
+  gradientLayer.startPoint = $.CGPointMake(0, 0);
+  gradientLayer.endPoint = $.CGPointMake(1, 1);
+  layer.insertSublayerAtIndex(gradientLayer, 0);
+
+  // Animate gradient flow
+  var anim = $.CABasicAnimation.animationWithKeyPath("startPoint");
+  anim.fromValue = $.NSValue.valueWithPoint($.NSMakePoint(0, 0));
+  anim.toValue = $.NSValue.valueWithPoint($.NSMakePoint(1, 0));
+  anim.duration = 3.0;
+  anim.repeatCount = Infinity;
+  anim.autoreverses = true;
+  gradientLayer.addAnimationForKey(anim, "flowStart");
+
+  var anim2 = $.CABasicAnimation.animationWithKeyPath("endPoint");
+  anim2.fromValue = $.NSValue.valueWithPoint($.NSMakePoint(1, 1));
+  anim2.toValue = $.NSValue.valueWithPoint($.NSMakePoint(0, 1));
+  anim2.duration = 3.0;
+  anim2.repeatCount = Infinity;
+  anim2.autoreverses = true;
+  gradientLayer.addAnimationForKey(anim2, "flowEnd");
+
+  // Text area offset (shift right if icon present)
+  var textLeft = iconPadding;
+  var hasIcon = false;
+
+  // Character icon
+  if (iconPath && iconPath !== "") {
+    var img = $.NSImage.alloc.initWithContentsOfFile($(iconPath));
+    if (img && img.isValid) {
+      hasIcon = true;
+      var imgView = $.NSImageView.alloc.initWithFrame(
+        $.NSMakeRect(iconPadding, (winHeight - iconSize) / 2, iconSize, iconSize)
+      );
+      imgView.setImage(img);
+      imgView.setImageScaling($.NSImageScaleProportionallyUpOrDown);
+      contentView.addSubview(imgView);
+      textLeft = iconPadding + iconSize + 12;
+    }
+  }
+
+  var textWidth = winWidth - textLeft - iconPadding;
+
+  // Main phrase text (bold 16pt, white)
+  var phraseLabel = $.NSTextField.alloc.initWithFrame(
+    $.NSMakeRect(textLeft, subtitle ? 28 : 22, textWidth, 30)
+  );
+  phraseLabel.stringValue = $(message);
+  phraseLabel.bezeled = false;
+  phraseLabel.drawsBackground = false;
+  phraseLabel.editable = false;
+  phraseLabel.selectable = false;
+  phraseLabel.textColor = $.NSColor.whiteColor;
+  phraseLabel.font = $.NSFont.boldSystemFontOfSize(16);
+  phraseLabel.lineBreakMode = $.NSLineBreakByTruncatingTail;
+  contentView.addSubview(phraseLabel);
+
+  // Subtitle (12pt, white 70% opacity)
+  if (subtitle) {
+    var subLabel = $.NSTextField.alloc.initWithFrame(
+      $.NSMakeRect(textLeft, 10, textWidth, 20)
+    );
+    subLabel.stringValue = $(subtitle);
+    subLabel.bezeled = false;
+    subLabel.drawsBackground = false;
+    subLabel.editable = false;
+    subLabel.selectable = false;
+    subLabel.textColor = $.NSColor.colorWithCalibratedRedGreenBlueAlpha(1, 1, 1, 0.7);
+    subLabel.font = $.NSFont.systemFontOfSize(12);
+    subLabel.lineBreakMode = $.NSLineBreakByTruncatingTail;
+    contentView.addSubview(subLabel);
+  }
+
+  // Show window with fade-in
+  win.setAlphaValue(0);
+  win.orderFrontRegardless;
+
+  var fadeIn = $.NSDictionary.dictionaryWithObjectsForKeys(
+    [win, $.NSViewAnimationFadeInEffect],
+    [$.NSViewAnimationTargetKey, $.NSViewAnimationEffectKey]
+  );
+  var fadeInAnim = $.NSViewAnimation.alloc.initWithViewAnimations([fadeIn]);
+  fadeInAnim.duration = 0.3;
+  fadeInAnim.startAnimation;
+
+  // Schedule fade-out and dismiss
+  var app = $.NSApplication.sharedApplication;
+  app.activateIgnoringOtherApps(false);
+
+  // Run loop with timeout
+  var runLoop = $.NSRunLoop.currentRunLoop;
+  var endDate = $.NSDate.dateWithTimeIntervalSinceNow(dismissSecs);
+  while (runLoop.runModeBeforeDate($.NSDefaultRunLoopMode, endDate)) {
+    if ($.NSDate.date.compare(endDate) !== $.NSOrderedAscending) break;
+  }
+
+  // Fade out
+  var fadeOut = $.NSDictionary.dictionaryWithObjectsForKeys(
+    [win, $.NSViewAnimationFadeOutEffect],
+    [$.NSViewAnimationTargetKey, $.NSViewAnimationEffectKey]
+  );
+  var fadeOutAnim = $.NSViewAnimation.alloc.initWithViewAnimations([fadeOut]);
+  fadeOutAnim.duration = 0.3;
+  fadeOutAnim.startAnimation;
+
+  // Wait for fade-out to finish
+  var fadeEnd = $.NSDate.dateWithTimeIntervalSinceNow(0.35);
+  while (runLoop.runModeBeforeDate($.NSDefaultRunLoopMode, fadeEnd)) {
+    if ($.NSDate.date.compare(fadeEnd) !== $.NSOrderedAscending) break;
+  }
+
+  win.close;
+}

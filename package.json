@@ -11,6 +11,9 @@
     "packs/*/pack.json",
     "packs/*/voice.wav",
     "skills/",
+    "assets/*.png",
+    "assets/*.jpg",
+    "assets/*.gif",
     "config.default.json",
     "voiceforge.sh",
     "LICENSE"

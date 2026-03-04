@@ -1,5 +1,6 @@
 {
   "name": "StarCraft 1 Adjutant",
+  "overlay_colors": [[0.1, 0.4, 0.7], [0.05, 0.2, 0.5]],
   "voice": "voice.wav",
   "echo": true,
   "tts_params": {

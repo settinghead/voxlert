@@ -126,6 +126,7 @@ export function loadPack(config) {
     style: packData.style || packData.system_prompt || null,
     examples: packData.examples || null,
     fallback_phrases: packData.fallback_phrases || null,
+    overlay_colors: packData.overlay_colors || null,
   };
 }
 
