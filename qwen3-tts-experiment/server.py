@@ -112,6 +112,17 @@ def _load_pytorch():
     import torch
     from qwen_tts import Qwen3TTSModel
 
+    # Prefer CUDA, then MPS (Apple), then CPU
+    if torch.cuda.is_available():
+        device_map = "cuda"
+        device_name = "cuda"
+    elif getattr(torch.backends, "mps", None) and torch.backends.mps.is_available():
+        device_map = "mps"
+        device_name = "mps"
+    else:
+        device_map = "cpu"
+        device_name = "cpu"
+
     model_key = DEFAULT_PT_MODEL
     if model_key not in AVAILABLE_MODELS:
         print(f"Unknown model key '{model_key}', falling back to 1.7B")
@@ -120,10 +131,10 @@ def _load_pytorch():
     model_path = MODELS_DIR / model_name
     if not model_path.exists():
         raise RuntimeError(f"Model not found: {model_path}")
-    print(f"Loading {model_name} on MPS …")
+    print(f"Loading {model_name} on {device_name} …")
     model = Qwen3TTSModel.from_pretrained(
         str(model_path),
-        device_map="mps",
+        device_map=device_map,
         dtype=torch.float32,
         attn_implementation="sdpa",
     )
@@ -221,7 +232,16 @@ async def tts(req: TTSRequest):
 @app.get("/health")
 def health():
     packs = sorted(pack_meta.keys()) if RUNTIME == "mlx" else sorted(prompt_cache.keys())
-    device = "apple-silicon-mlx" if RUNTIME == "mlx" else "mps"
+    if RUNTIME == "mlx":
+        device = "apple-silicon-mlx"
+    else:
+        import torch
+        if torch.cuda.is_available():
+            device = "cuda"
+        elif getattr(torch.backends, "mps", None) and torch.backends.mps.is_available():
+            device = "mps"
+        else:
+            device = "cpu"
     return {
         "model": model_name,
         "runtime": RUNTIME,

@@ -83,97 +83,10 @@ See [Installing SoX](docs/installing-sox.md) for platform-specific instructions.
 
 | Backend | Best for | Requirements |
 |---|---|---|
-| [**Qwen3-TTS**](#option-a-qwen3-tts-setup) (recommended) | Apple Silicon Macs | Python 3.13+, 16 GB RAM, ~8 GB disk |
-| [**Chatterbox**](#option-b-chatterbox-tts-setup) | Any platform with GPU | Python 3.10+, CUDA or MPS |
+| [**Qwen3-TTS**](qwen3-tts-experiment/README.md) (recommended) | Apple Silicon or NVIDIA GPU | Python 3.13+, 16 GB RAM, ~8 GB disk |
+| [**Chatterbox**](docs/chatterbox-tts.md) | Any platform with GPU | Python 3.10+, CUDA or MPS |
 
-<details>
-<summary><strong>Option A: Qwen3-TTS Setup (recommended for Apple Silicon)</strong></summary>
-
-<a id="option-a-qwen3-tts-setup"></a>
-
-Uses [Qwen3-TTS](https://huggingface.co/Qwen/Qwen3-TTS-12Hz-1.7B-Base) with an MLX backend (quantized, fast on Apple Silicon).
-
-```bash
-cd qwen3-tts-experiment
-./setup.sh    # creates venv, installs deps, downloads model (~8 GB)
-./run.sh      # starts server on port 8100
-```
-
-Then set VoiceForge to use it:
-
-```bash
-voiceforge config set tts_backend qwen
-```
-
-See [`qwen3-tts-experiment/README.md`](qwen3-tts-experiment/README.md) for environment variables, API docs, and troubleshooting.
-
-</details>
-
-<details>
-<summary><strong>Option B: Chatterbox TTS Setup</strong></summary>
-
-<a id="option-b-chatterbox-tts-setup"></a>
-
-Uses [Chatterbox TTS](https://github.com/resemble-ai/chatterbox) for speech synthesis running as a local API server.
-
-#### 1. Clone and set up Chatterbox
-
-```bash
-git clone https://github.com/resemble-ai/chatterbox.git
-cd chatterbox
-python3 -m venv venv
-source venv/bin/activate
-pip install -e .
-pip install fastapi uvicorn
-```
-
-#### 2. Run the server
-
-```bash
-python -m chatterbox.server --port 8004
-```
-
-#### 3. (Optional) Auto-start with launchd (macOS)
-
-Create `~/Library/LaunchAgents/com.chatterbox.tts.plist`:
-
-```xml
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
-  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-    <key>Label</key>
-    <string>com.chatterbox.tts</string>
-    <key>ProgramArguments</key>
-    <array>
-        <string>/path/to/chatterbox/venv/bin/python</string>
-        <string>-m</string>
-        <string>chatterbox.server</string>
-        <string>--port</string>
-        <string>8004</string>
-    </array>
-    <key>WorkingDirectory</key>
-    <string>/path/to/chatterbox</string>
-    <key>RunAtLoad</key>
-    <true/>
-    <key>KeepAlive</key>
-    <true/>
-    <key>StandardOutPath</key>
-    <string>/tmp/chatterbox.log</string>
-    <key>StandardErrorPath</key>
-    <string>/tmp/chatterbox.err</string>
-</dict>
-</plist>
-```
-
-Then load it:
-
-```bash
-launchctl load ~/Library/LaunchAgents/com.chatterbox.tts.plist
-```
-
-</details>
+See [Qwen3-TTS](qwen3-tts-experiment/README.md) for installation and backends (MLX, PyTorch+MPS, PyTorch+CUDA). See [Chatterbox TTS](docs/chatterbox-tts.md) for setup.
 
 The setup wizard (`voiceforge setup`) auto-detects which TTS backends are running and lets you choose.
 

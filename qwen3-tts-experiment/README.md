@@ -1,43 +1,64 @@
-# Qwen3-TTS Experiment
+# Qwen3-TTS (VoiceForge TTS backend)
 
-A FastAPI server that uses [Qwen3-TTS](https://huggingface.co/Qwen/Qwen3-TTS-12Hz-1.7B-Base) for voice-cloned text-to-speech. Give it a voice pack (a short WAV reference + transcript) and it generates speech in that voice. Supports both an MLX backend (quantized, fast on Apple Silicon) and a PyTorch backend (full-precision via MPS).
+A FastAPI server that uses [Qwen3-TTS](https://huggingface.co/Qwen/Qwen3-TTS-12Hz-1.7B-Base) for voice-cloned text-to-speech. Give it a voice pack (a short WAV reference + transcript) and it generates speech in that voice.
 
-## Prerequisites
+## Installation
 
-- **Apple Silicon** Mac (M1/M2/M3/M4)
+### Prerequisites
+
 - **Python 3.13+**
 - **16 GB RAM** minimum (32 GB recommended for 1.7B model)
 - **~8 GB disk** for models + dependencies
+- **Backend-specific:**
+  - **MLX** (recommended on Mac): Apple Silicon (M1/M2/M3/M4)
+  - **PyTorch + MPS**: Apple Silicon, macOS
+  - **PyTorch + CUDA**: Linux or Windows with an NVIDIA GPU
 
-## Quick start
+### Quick start
 
 ```bash
 # 1. Run first-time setup (venv, deps, model download)
 ./setup.sh
 
-# 2. Start the server (MLX backend by default)
+# 2. Start the server (MLX backend by default on Mac; see Backends below)
 ./run.sh
 
-# 3. Generate speech
+# 3. Point VoiceForge at it
+voiceforge config set tts_backend qwen
+```
+
+Generate speech directly:
+
+```bash
 curl -X POST http://localhost:8100/tts \
   -H 'Content-Type: application/json' \
   -d '{"text": "Hello world", "pack_id": "sc2-kerrigan"}' \
   --output hello.wav
 ```
 
-## Environment variables
+## Backends
 
-| Variable | Default | Description |
-|---|---|---|
-| `QWEN_TTS_RUNTIME` | `mlx` | Backend to use: `mlx` or `pytorch` |
-| `QWEN_TTS_MLX_MODEL` | `mlx-community/Qwen3-TTS-12Hz-1.7B-Base-8bit` | HuggingFace model ID for the MLX backend |
-| `QWEN_TTS_MODEL` | `1.7B` | PyTorch model size: `1.7B` or `0.6B` |
+| Backend | Best for | Runtime flag |
+|---------|-----------|--------------|
+| **MLX** | Apple Silicon Macs (quantized, fast) | `QWEN_TTS_RUNTIME=mlx` (default) |
+| **PyTorch + MPS** | Apple Silicon Macs (full precision) | `QWEN_TTS_RUNTIME=pytorch` on macOS |
+| **PyTorch + CUDA** | Linux/Windows with NVIDIA GPU | `QWEN_TTS_RUNTIME=pytorch` when CUDA is available |
 
-Example — run with PyTorch and the smaller model:
+The server chooses PyTorch device automatically: CUDA if available, else MPS (Apple), else CPU.
+
+Example — run with PyTorch (MPS on Mac, or CUDA on Linux/Windows):
 
 ```bash
 QWEN_TTS_RUNTIME=pytorch QWEN_TTS_MODEL=0.6B ./run.sh
 ```
+
+## Environment variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `QWEN_TTS_RUNTIME` | `mlx` | Backend: `mlx` or `pytorch` |
+| `QWEN_TTS_MLX_MODEL` | `mlx-community/Qwen3-TTS-12Hz-1.7B-Base-8bit` | HuggingFace model ID for MLX |
+| `QWEN_TTS_MODEL` | `1.7B` | PyTorch model size: `1.7B` or `0.6B` |
 
 ## API endpoints
 
@@ -79,10 +100,12 @@ curl http://localhost:8100/health | python3 -m json.tool
 }
 ```
 
+`device` can be `apple-silicon-mlx`, `mps`, `cuda`, or `cpu`.
+
 ## Scripts reference
 
 | Script | Purpose |
-|---|---|
+|--------|---------|
 | `server.py` | FastAPI TTS server (the main application) |
 | `run.sh` | Activates venv and starts the server |
 | `setup.sh` | First-time setup: venv, deps, model download |
@@ -110,10 +133,10 @@ The server reads all packs at startup and caches them. Only packs that have both
 
 ## Troubleshooting
 
-**Segfault or crash under concurrent requests**
-MLX and PyTorch MPS are not thread-safe. The server serializes all inference behind a lock, but sending many requests in rapid succession can still cause memory pressure. Stick to one request at a time.
+**Segfault or crash under concurrent requests**  
+MLX and PyTorch MPS/CUDA are not fully thread-safe. The server serializes all inference behind a lock, but sending many requests in rapid succession can still cause memory pressure. Stick to one request at a time.
 
-**Model not found (PyTorch backend)**
+**Model not found (PyTorch backend)**  
 The PyTorch backend looks for models in `models/Qwen3-TTS-12Hz-{size}-Base`. Run `./setup.sh` to download them, or manually:
 
 ```bash
@@ -123,15 +146,22 @@ snapshot_download('Qwen/Qwen3-TTS-12Hz-1.7B-Base', local_dir='models/Qwen3-TTS-1
 "
 ```
 
-**MPS not available**
+**MPS not available**  
 Ensure you're on Apple Silicon with a recent macOS. Check with:
 
 ```bash
 python3 -c "import torch; print(torch.backends.mps.is_available())"
 ```
 
-**MLX model download fails**
+**CUDA not used on Linux/Windows**  
+Ensure PyTorch is installed with CUDA support and a GPU is available:
+
+```bash
+python3 -c "import torch; print('CUDA:', torch.cuda.is_available())"
+```
+
+**MLX model download fails**  
 The MLX backend auto-downloads from HuggingFace on first run. If you're behind a proxy, set `HF_HUB_OFFLINE=0` and ensure `huggingface_hub` can reach the internet.
 
-**Pack not showing in /health**
+**Pack not showing in /health**  
 The pack needs both `voice.wav` and a non-empty `ref_text` field in `pack.json`. Run `transcribe_packs_v2.py` to auto-generate transcripts.
