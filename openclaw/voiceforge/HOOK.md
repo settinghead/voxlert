@@ -22,15 +22,14 @@ This hook translates OpenClaw events into VoiceForge notifications:
 
 ## Requirements
 
-- **VoiceForge** installed (`~/.claude/hooks/voiceforge/`)
+- **VoiceForge** installed (`npm install -g @settinghead/voiceforge` and `voiceforge setup`, with OpenClaw selected in the hooks step)
 - **Node.js 18+**
-- **macOS** (uses `afplay` for audio playback)
-- **Chatterbox TTS server** running locally (for speech synthesis)
-- **OpenRouter API key** configured in VoiceForge config (for contextual phrases)
+- **Chatterbox or Qwen TTS** running locally (or fallback phrases only)
+- **LLM API key** (e.g. OpenRouter) in VoiceForge config for contextual phrases
 
 ## Configuration
 
-VoiceForge configuration is shared with Claude Code at `~/.claude/hooks/voiceforge/config.json`. Use the `voiceforge` CLI to manage settings:
+VoiceForge config is at `~/.voiceforge/config.json` (or `voiceforge config path`). Use the `voiceforge` CLI to manage settings:
 
 ```bash
 voiceforge config              # Show current config

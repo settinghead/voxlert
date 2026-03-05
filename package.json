@@ -16,6 +16,7 @@
     "assets/*.gif",
     "config.default.json",
     "voiceforge.sh",
+    "openclaw/",
     "LICENSE"
   ],
   "scripts": {
@@ -24,6 +25,7 @@
   },
   "license": "MIT",
   "dependencies": {
+    "@inquirer/checkbox": "^5.0.0",
     "@inquirer/confirm": "^5.1.0",
     "@inquirer/input": "^4.1.0",
     "@inquirer/select": "^5.1.0",

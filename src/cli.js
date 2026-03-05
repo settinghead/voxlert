@@ -3,6 +3,7 @@
 import { readFileSync, existsSync, watchFile, rmSync } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
+import { homedir } from "os";
 import { createInterface } from "readline";
 import select from "@inquirer/select";
 import confirm from "@inquirer/confirm";
@@ -451,6 +452,18 @@ async function runUninstall() {
     console.log("  No VoiceForge hooks or skill were found.");
   }
 
+  const openclawHookDir = join(homedir(), ".openclaw", "hooks", "voiceforge");
+  if (existsSync(openclawHookDir)) {
+    const removeOpenClaw = await confirm({
+      message: `Remove OpenClaw hook (${openclawHookDir})?`,
+      default: false,
+    });
+    if (removeOpenClaw) {
+      rmSync(openclawHookDir, { recursive: true });
+      console.log(`  Removed ${openclawHookDir}`);
+    }
+  }
+
   if (existsSync(STATE_DIR)) {
     const removeData = await confirm({
       message: `Remove config and cache (${STATE_DIR})?`,
@@ -483,7 +496,7 @@ async function runUninstall() {
   switch (cmd) {
     case "setup": {
       const { runSetup } = await import("./setup.js");
-      await runSetup({ fromInstallSh: args.includes("--from-install-sh") });
+      await runSetup();
       break;
     }
 

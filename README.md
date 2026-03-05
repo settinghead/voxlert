@@ -206,7 +206,7 @@ Or from inside a Claude Code / OpenClaw session, just ask your agent:
 | `command:reset` | SessionStart | `session.start` |
 | `message:received` | UserPromptSubmit | `task.acknowledge` |
 
-Configuration is shared with VoiceForge — run `voiceforge setup` to configure. To uninstall: `bash uninstall-openclaw.sh`.
+Configuration is shared with VoiceForge — run `voiceforge setup` to configure. To uninstall: `voiceforge uninstall`. To remove only the OpenClaw hook, delete `~/.openclaw/hooks/voiceforge`.
 
 ## Cursor Integration
 

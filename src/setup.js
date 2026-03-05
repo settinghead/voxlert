@@ -6,9 +6,11 @@
 
 import { existsSync, mkdirSync, readdirSync, copyFileSync } from "fs";
 import { join } from "path";
+import { homedir } from "os";
 import { request as httpsRequest } from "https";
 import { request as httpRequest } from "http";
 import select from "@inquirer/select";
+import checkbox from "@inquirer/checkbox";
 import input from "@inquirer/input";
 import confirm from "@inquirer/confirm";
 import { loadConfig, saveConfig, ensureConfig } from "./config.js";
@@ -134,7 +136,22 @@ function ensurePacks() {
   }
 }
 
-export async function runSetup({ fromInstallSh = false } = {}) {
+const OPENCLAW_SRC = join(SCRIPT_DIR, "openclaw", "voiceforge");
+const OPENCLAW_HOOKS_DEST = join(homedir(), ".openclaw", "hooks", "voiceforge");
+
+/**
+ * Install VoiceForge hook for OpenClaw by copying HOOK.md and handler.ts to ~/.openclaw/hooks/voiceforge/.
+ * @returns {boolean} true if files were copied
+ */
+function installOpenClawHook() {
+  if (!existsSync(OPENCLAW_SRC)) return false;
+  mkdirSync(OPENCLAW_HOOKS_DEST, { recursive: true });
+  copyFileSync(join(OPENCLAW_SRC, "HOOK.md"), join(OPENCLAW_HOOKS_DEST, "HOOK.md"));
+  copyFileSync(join(OPENCLAW_SRC, "handler.ts"), join(OPENCLAW_HOOKS_DEST, "handler.ts"));
+  return true;
+}
+
+export async function runSetup() {
   console.log("\n=== VoiceForge Setup ===\n");
 
   // Ensure config exists
@@ -289,40 +306,49 @@ export async function runSetup({ fromInstallSh = false } = {}) {
     console.log("  To set up Qwen TTS, see the qwen3-tts-experiment/ directory.\n");
   }
 
-  // --- Step 5: Claude Code Hooks ---
-  console.log("\nStep 5/5: Claude Code Hooks\n");
+  // --- Step 5: Hooks (platforms) ---
+  console.log("\nStep 5/5: Hooks — which platforms?\n");
 
-  // Determine the hook command based on install mode
-  let hookCommand;
-  if (fromInstallSh) {
-    // install.sh: use absolute path to voiceforge.sh in the install dir
-    const installDir = join(process.env.HOME || "", ".claude", "hooks", "voiceforge");
-    hookCommand = join(installDir, "voiceforge.sh");
-  } else if (IS_NPM_GLOBAL) {
-    // npm global: use the CLI itself as the hook command
-    hookCommand = "voiceforge hook";
-  } else {
-    // Local dev / git clone
-    hookCommand = join(SCRIPT_DIR, "voiceforge.sh");
-  }
+  const platformChoices = [
+    { name: "Claude Code", value: "claude", description: "Register in ~/.claude/settings.json + install skill" },
+    { name: "OpenClaw", value: "openclaw", description: "Copy hook to ~/.openclaw/hooks/voiceforge" },
+    { name: "Cursor", value: "cursor", description: "Register in ~/.cursor/hooks.json (Agent / Cmd+K)" },
+  ];
 
-  const hookCount = registerHooks(hookCommand);
-  console.log(`  Registered ${hookCount} hook events in ~/.claude/settings.json`);
-
-  const skillInstalled = installSkill();
-  if (skillInstalled) {
-    console.log("  Installed voiceforge-config skill");
-  }
-
-  const installCursor = await confirm({
-    message: "Install Cursor hooks? (voice notifications in Cursor Agent / Cmd+K)",
-    default: false,
+  const selectedPlatforms = await checkbox({
+    message: "Which platforms do you want to install hooks for?",
+    choices: platformChoices,
+    required: false,
   });
-  if (installCursor) {
-    const cursorCommand = "voiceforge cursor-hook";
-    const cursorCount = registerCursorHooks(cursorCommand);
+
+  // Determine the hook command for Claude Code (used when "claude" is selected)
+  const hookCommand = IS_NPM_GLOBAL ? "voiceforge hook" : join(SCRIPT_DIR, "voiceforge.sh");
+
+  if (selectedPlatforms.includes("claude")) {
+    const hookCount = registerHooks(hookCommand);
+    console.log(`  Registered ${hookCount} hook events in ~/.claude/settings.json`);
+    if (installSkill()) {
+      console.log("  Installed voiceforge-config skill");
+    }
+  }
+
+  if (selectedPlatforms.includes("openclaw")) {
+    if (installOpenClawHook()) {
+      console.log("  Installed OpenClaw hook at ~/.openclaw/hooks/voiceforge");
+      console.log("  Run 'openclaw hooks list' to verify; start an OpenClaw session to hear VoiceForge.");
+    } else {
+      console.log("  OpenClaw hook files not found (install from a git clone that includes openclaw/).");
+    }
+  }
+
+  if (selectedPlatforms.includes("cursor")) {
+    const cursorCount = registerCursorHooks("voiceforge cursor-hook");
     console.log(`  Registered ${cursorCount} hook events in ~/.cursor/hooks.json`);
     console.log("  Restart Cursor for hooks to take effect.");
+  }
+
+  if (selectedPlatforms.length === 0) {
+    console.log("  No platforms selected. Run 'voiceforge setup' again to install hooks later.");
   }
 
   // --- Save config ---
@@ -339,9 +365,15 @@ export async function runSetup({ fromInstallSh = false } = {}) {
   }
   console.log(`  Voice:  ${config.active_pack}`);
   console.log(`  TTS:    ${config.tts_backend}`);
-  console.log("\n  Start a new Claude Code session to hear VoiceForge!");
-  if (installCursor) {
-    console.log("  Restart Cursor to hear VoiceForge in Agent Chat.");
+  console.log("\n  Start a new session in each platform you installed to hear VoiceForge!");
+  if (selectedPlatforms.includes("claude")) {
+    console.log("  Claude Code: start a new Claude Code session.");
+  }
+  if (selectedPlatforms.includes("openclaw")) {
+    console.log("  OpenClaw: run 'openclaw hooks list' then start an OpenClaw session.");
+  }
+  if (selectedPlatforms.includes("cursor")) {
+    console.log("  Cursor: restart Cursor to hear VoiceForge in Agent Chat.");
   }
   console.log("  To reconfigure: voiceforge setup\n");
 }
