@@ -4,7 +4,7 @@
  * TTS server detection, and Claude Code hook registration.
  */
 
-import { existsSync, mkdirSync, readdirSync, copyFileSync } from "fs";
+import { existsSync, mkdirSync, readdirSync, copyFileSync, writeFileSync } from "fs";
 import { join } from "path";
 import { homedir } from "os";
 import { request as httpsRequest } from "https";
@@ -16,6 +16,7 @@ import confirm from "@inquirer/confirm";
 import { loadConfig, saveConfig, ensureConfig } from "./config.js";
 import { listPacks } from "./packs.js";
 import { CONFIG_PATH, PACKS_DIR, CACHE_DIR, IS_NPM_GLOBAL, BUNDLED_PACKS_DIR, SCRIPT_DIR } from "./paths.js";
+import { PACK_REGISTRY, DEFAULT_DOWNLOAD_PACK_IDS, getPackRegistryBaseUrl } from "./pack-registry.js";
 import { LLM_PROVIDERS, getProvider } from "./providers.js";
 import { registerHooks, installSkill } from "./hooks.js";
 import { registerCursorHooks } from "./cursor-hooks.js";
@@ -113,6 +114,59 @@ function validateApiKey(providerId, apiKey) {
 }
 
 /**
+ * Fetch a URL and return the response body as a Buffer.
+ * Rejects on non-2xx or network error.
+ */
+function fetchUrl(url, timeoutMs = 15000) {
+  return new Promise((resolve, reject) => {
+    let urlObj;
+    try {
+      urlObj = new URL(url);
+    } catch (e) {
+      return reject(e);
+    }
+    const reqFn = urlObj.protocol === "https:" ? httpsRequest : httpRequest;
+    const req = reqFn(urlObj, { method: "GET", timeout: timeoutMs }, (res) => {
+      if (res.statusCode < 200 || res.statusCode >= 300) {
+        reject(new Error(`HTTP ${res.statusCode}`));
+        res.resume();
+        return;
+      }
+      const chunks = [];
+      res.on("data", (chunk) => chunks.push(chunk));
+      res.on("end", () => resolve(Buffer.concat(chunks)));
+      res.on("error", reject);
+    });
+    req.on("error", reject);
+    req.on("timeout", () => {
+      req.destroy();
+      reject(new Error("Timeout"));
+    });
+    req.end();
+  });
+}
+
+/**
+ * Download a voice pack from the registry base URL into PACKS_DIR/<id>/.
+ * Writes pack.json and voice.wav. Resolves on success, rejects on fetch/write error.
+ */
+async function downloadPack(packId, baseUrl) {
+  const dir = join(PACKS_DIR, packId);
+  mkdirSync(dir, { recursive: true });
+
+  const packUrl = `${baseUrl.replace(/\/$/, "")}/${packId}/pack.json`;
+  const voiceUrl = `${baseUrl.replace(/\/$/, "")}/${packId}/voice.wav`;
+
+  const [packBuf, voiceBuf] = await Promise.all([
+    fetchUrl(packUrl),
+    fetchUrl(voiceUrl),
+  ]);
+
+  writeFileSync(join(dir, "pack.json"), packBuf);
+  writeFileSync(join(dir, "voice.wav"), voiceBuf);
+}
+
+/**
  * Copy bundled packs to the user's packs directory (for npm global installs).
  */
 function ensurePacks() {
@@ -147,7 +201,7 @@ export async function runSetup() {
   const config = loadConfig();
 
   // --- Step 1: LLM Provider ---
-  console.log("Step 1/5: LLM Provider\n");
+  console.log("Step 1/6: LLM Provider\n");
 
   const providerChoices = [
     ...Object.entries(LLM_PROVIDERS).map(([id, p]) => ({
@@ -171,7 +225,7 @@ export async function runSetup() {
     const provider = getProvider(chosenProvider);
 
     // --- Step 2: API Key ---
-    console.log(`\nStep 2/5: API Key\n`);
+    console.log(`\nStep 2/6: API Key\n`);
     console.log(`  Get a key at: ${provider.signupUrl}\n`);
 
     const existingKey = config.llm_api_key || config.openrouter_api_key || "";
@@ -226,8 +280,50 @@ export async function runSetup() {
     console.log("\n  Skipped — VoiceForge will use fallback phrases from the voice pack.\n");
   }
 
-  // --- Step 3: Voice Pack ---
-  console.log("Step 3/5: Voice Pack\n");
+  // --- Step 3: Download voice packs (from GitHub) ---
+  console.log("\nStep 3/6: Download voice packs\n");
+  console.log("  Voice packs can be downloaded from the VoiceForge GitHub repo.\n");
+
+  mkdirSync(PACKS_DIR, { recursive: true });
+  const existingPackIds = new Set();
+  try {
+    for (const entry of readdirSync(PACKS_DIR, { withFileTypes: true })) {
+      if (entry.isDirectory() && existsSync(join(PACKS_DIR, entry.name, "pack.json"))) {
+        existingPackIds.add(entry.name);
+      }
+    }
+  } catch {
+    // PACKS_DIR may not exist yet
+  }
+
+  const packChoices = PACK_REGISTRY.map((p) => ({
+    name: existingPackIds.has(p.id) ? `${p.name} (already installed)` : p.name,
+    value: p.id,
+    checked: DEFAULT_DOWNLOAD_PACK_IDS.includes(p.id),
+  }));
+
+  const toDownload = await checkbox({
+    message: "Which voice packs do you want to install? (downloaded from GitHub)",
+    choices: packChoices,
+    required: false,
+  });
+
+  const baseUrl = getPackRegistryBaseUrl();
+  for (const packId of toDownload || []) {
+    if (existingPackIds.has(packId)) continue;
+    const pack = PACK_REGISTRY.find((p) => p.id === packId);
+    const label = pack ? pack.name : packId;
+    process.stdout.write(`  Downloading ${label}... `);
+    try {
+      await downloadPack(packId, baseUrl);
+      console.log("done.");
+    } catch (err) {
+      console.log(`failed (${err.message}).`);
+    }
+  }
+
+  // --- Step 4: Voice Pack ---
+  console.log("Step 4/6: Voice Pack\n");
 
   const packs = listPacks();
   if (packs.length > 0) {
@@ -255,8 +351,8 @@ export async function runSetup() {
     console.log("  No voice packs found. Using default.\n");
   }
 
-  // --- Step 4: TTS Server ---
-  console.log("\nStep 4/5: TTS Server\n");
+  // --- Step 5: TTS Server ---
+  console.log("\nStep 5/6: TTS Server\n");
 
   const chatterboxUrl = config.chatterbox_url || "http://localhost:8004";
   const qwenUrl = config.qwen_tts_url || "http://localhost:8100";
@@ -291,8 +387,8 @@ export async function runSetup() {
     console.log("  To set up Qwen TTS, see the qwen3-tts-experiment/ directory.\n");
   }
 
-  // --- Step 5: Hooks (platforms) ---
-  console.log("\nStep 5/5: Hooks — which platforms?\n");
+  // --- Step 6: Hooks (platforms) ---
+  console.log("\nStep 6/6: Hooks — which platforms?\n");
 
   const platformChoices = [
     { name: "Claude Code", value: "claude", description: "Register in ~/.claude/settings.json + install skill" },

@@ -102,7 +102,7 @@ npm install -g @settinghead/voiceforge
 voiceforge setup
 ```
 
-The setup wizard configures your LLM provider, API key, voice pack, TTS server, and **which platforms** get hooks. In Step 5 you choose one or more of: **Claude Code**, **Cursor** (checkbox — you can select none, one, or both). For OpenClaw, use the separate [OpenClaw plugin](docs/openclaw.md). Run `voiceforge setup` again anytime to reconfigure or add another platform.
+The setup wizard configures your LLM provider, API key, **voice pack download** (from GitHub), active voice pack, TTS server, and **which platforms** get hooks. In Step 3 you choose which voice packs to download; in Step 6 you choose platforms (**Claude Code**, **Cursor**). For OpenClaw, use the separate [OpenClaw plugin](docs/openclaw.md). Run `voiceforge setup` again anytime to reconfigure or add another platform.
 
 3. **For spoken voice**, start at least one TTS backend (see [Qwen3-TTS](qwen3-tts-experiment/README.md) or [Chatterbox](docs/chatterbox-tts.md)), then run `voiceforge setup` again so the wizard can detect it.
 
