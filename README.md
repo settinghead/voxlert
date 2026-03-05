@@ -74,34 +74,7 @@ flowchart TD
 | **Audio playback** | Built-in (`afplay`) | [FFmpeg](https://ffmpeg.org/download.html) — `ffplay` on PATH | [FFmpeg](https://ffmpeg.org/) — `ffplay` on PATH |
 | **Audio effects** | [SoX](docs/installing-sox.md) (optional) | [SoX](docs/installing-sox.md) (optional) | [SoX](docs/installing-sox.md) (optional) |
 
-<details>
-<summary><strong>Installing SoX (optional)</strong></summary>
-
-<a id="installing-sox-optional"></a>
-
-SoX is used for audio post-processing (echo, normalization). VoiceForge works without it, but with SoX you get richer character sound. Install the `sox` binary so it’s on your PATH.
-
-**macOS** (Homebrew):
-
-```bash
-brew install sox
-```
-
-**Windows** (choose one):
-
-- **Chocolatey:** `choco install sox`
-- **Scoop:** `scoop install sox`
-- **Manual:** Download the [SoX Windows binaries](https://sourceforge.net/projects/sox/files/sox/) and add the folder containing `sox.exe` to your PATH.
-
-**Linux:**
-
-- **Debian / Ubuntu:** `sudo apt install sox`
-- **Fedora / RHEL:** `sudo dnf install sox`
-- **Arch:** `sudo pacman -S sox`
-
-Check that it’s installed: `sox --version`
-
-</details>
+See [Installing SoX](docs/installing-sox.md) for platform-specific instructions.
 
 **All platforms**
 
@@ -110,11 +83,13 @@ Check that it’s installed: `sox --version`
 
 | Backend | Best for | Requirements |
 |---|---|---|
-| **Qwen3-TTS** (recommended) | Apple Silicon Macs | Python 3.13+, 16 GB RAM, ~8 GB disk |
-| **Chatterbox** | Any platform with GPU | Python 3.10+, CUDA or MPS |
+| [**Qwen3-TTS**](#option-a-qwen3-tts-setup) (recommended) | Apple Silicon Macs | Python 3.13+, 16 GB RAM, ~8 GB disk |
+| [**Chatterbox**](#option-b-chatterbox-tts-setup) | Any platform with GPU | Python 3.10+, CUDA or MPS |
 
 <details>
 <summary><strong>Option A: Qwen3-TTS Setup (recommended for Apple Silicon)</strong></summary>
+
+<a id="option-a-qwen3-tts-setup"></a>
 
 Uses [Qwen3-TTS](https://huggingface.co/Qwen/Qwen3-TTS-12Hz-1.7B-Base) with an MLX backend (quantized, fast on Apple Silicon).
 
@@ -136,6 +111,8 @@ See [`qwen3-tts-experiment/README.md`](qwen3-tts-experiment/README.md) for envir
 
 <details>
 <summary><strong>Option B: Chatterbox TTS Setup</strong></summary>
+
+<a id="option-b-chatterbox-tts-setup"></a>
 
 Uses [Chatterbox TTS](https://github.com/resemble-ai/chatterbox) for speech synthesis running as a local API server.
 
