@@ -10,7 +10,7 @@ import { generatePhrase } from "./llm.js";
 import { speakPhrase } from "./audio.js";
 import { loadPack, listPacks } from "./packs.js";
 import { formatCost, resetUsage } from "./cost.js";
-import { CONFIG_PATH, STATE_DIR } from "./paths.js";
+import { CONFIG_PATH, STATE_DIR, LOG_FILE } from "./paths.js";
 import { processHookEvent } from "./voiceforge.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -27,6 +27,7 @@ Usage:
   voiceforge config show         Show current configuration
   voiceforge config set <k> <v>  Set a config value (supports categories.X dot notation)
   voiceforge config path         Print config file path
+  voiceforge log path            Print fallback/LLM log file path
   voiceforge voice               Interactive voice pack picker
   voiceforge pack list           List available voice packs
   voiceforge pack show           Show active pack details
@@ -327,7 +328,7 @@ async function setVolume(val) {
   const sub = args[1] || "";
 
   // First-run: auto-launch setup wizard if ~/.voiceforge/ doesn't exist
-  const skipWizardCmds = ["setup", "hook", "cursor-hook", "help", "--help", "-h", "--version", "-v"];
+  const skipWizardCmds = ["setup", "hook", "cursor-hook", "log", "help", "--help", "-h", "--version", "-v"];
   if (!skipWizardCmds.includes(cmd) && !existsSync(STATE_DIR)) {
     console.log("Welcome to VoiceForge! Let's get you set up.\n");
     const { runSetup } = await import("./setup.js");
@@ -367,6 +368,15 @@ async function setVolume(val) {
         console.log(CONFIG_PATH);
       } else {
         showConfig();
+      }
+      break;
+
+    case "log":
+      if (sub === "path") {
+        console.log(LOG_FILE);
+      } else {
+        console.log("Fallback/LLM log: " + LOG_FILE);
+        console.log("Use: voiceforge log path");
       }
       break;
 

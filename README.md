@@ -260,6 +260,8 @@ Configuration lives at `config.json` (run `voiceforge config path` to find it). 
 | `volume` | number | `1.0` | Playback volume (0.0–1.0) |
 | `categories` | object | — | Enable/disable per event category |
 
+When the LLM is not used or fails (e.g. no context, timeout, API error), VoiceForge uses a fallback phrase and appends a line to the **fallback log**. Run `voiceforge log path` to print the log file path (usually `~/.voiceforge/fallback.log`). Only contextual events (Stop, PostToolUseFailure) produce log entries.
+
 You can also use the `/voiceforge-config` slash command in Claude Code to manage configuration interactively.
 
 ## CLI
@@ -275,6 +277,7 @@ voiceforge pack use <pack-id>     # Switch active voice pack
 voiceforge config                 # Show current configuration
 voiceforge config set <key> <val> # Set a config value (supports dot notation, e.g. categories.notification)
 voiceforge config path            # Print config file path
+voiceforge log path               # Print fallback/LLM log file path
 voiceforge test "<text>"          # Test full pipeline: LLM generates in-character phrase, TTS synthesizes speech, then plays audio
 voiceforge cost                   # Show accumulated token usage and estimated cost
 voiceforge cost reset             # Clear the usage log
