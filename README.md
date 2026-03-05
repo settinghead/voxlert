@@ -72,12 +72,36 @@ flowchart TD
 |--------|-------|---------|-------|
 | **Node.js** | 18+ | 18+ | 18+ |
 | **Audio playback** | Built-in (`afplay`) | [FFmpeg](https://ffmpeg.org/download.html) — `ffplay` on PATH | [FFmpeg](https://ffmpeg.org/) — `ffplay` on PATH |
-| **Audio effects** | FFmpeg + SoX (optional) | FFmpeg + SoX (optional) | FFmpeg + SoX (optional) |
+| **Audio effects** | [SoX](#installing-sox-optional) (optional) | [SoX](#installing-sox-optional) (optional) | [SoX](#installing-sox-optional) (optional) |
 
-> **🔔 Visual notifications** — VoiceForge shows a popup with each phrase (no extra install). On **macOS** you can use a custom overlay or the system Notification Center; on **Windows/Linux** you get system toasts. Turn notifications off or switch style anytime with:
-> ```bash
-> voiceforge notification
-> ```
+<details>
+<summary><strong>Installing SoX (optional)</strong></summary>
+
+<a id="installing-sox-optional"></a>
+
+SoX is used for audio post-processing (echo, normalization). VoiceForge works without it, but with SoX you get richer character sound. Install the `sox` binary so it’s on your PATH.
+
+**macOS** (Homebrew):
+
+```bash
+brew install sox
+```
+
+**Windows** (choose one):
+
+- **Chocolatey:** `choco install sox`
+- **Scoop:** `scoop install sox`
+- **Manual:** Download the [SoX Windows binaries](https://sourceforge.net/projects/sox/files/sox/) and add the folder containing `sox.exe` to your PATH.
+
+**Linux:**
+
+- **Debian / Ubuntu:** `sudo apt install sox`
+- **Fedora / RHEL:** `sudo dnf install sox`
+- **Arch:** `sudo pacman -S sox`
+
+Check that it’s installed: `sox --version`
+
+</details>
 
 **All platforms**
 
@@ -186,6 +210,11 @@ voiceforge setup
 The setup wizard configures your LLM provider, API key, voice pack, TTS server, Claude Code hooks, and optionally Cursor hooks. Run `voiceforge setup` again anytime to reconfigure.
 
 **From a git clone:** `npm install` in the repo, then run `voiceforge setup`. The `voiceforge` CLI will use the local copy (config and cache go to `~/.voiceforge` when installed globally, or the repo when run via `node src/cli.js`).
+
+> **🔔 Visual notifications** — VoiceForge shows a popup with each phrase (no extra install). On **macOS** you can use a custom overlay or the system Notification Center; on **Windows/Linux** you get system toasts. Turn notifications off or switch style anytime with:
+> ```bash
+> voiceforge notification
+> ```
 
 ## OpenClaw Integration
 
