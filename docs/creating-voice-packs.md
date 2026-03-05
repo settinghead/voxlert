@@ -52,8 +52,10 @@ The `<pack-id>` is a kebab-case identifier (e.g. `red-alert-eva`, `sc1-kerrigan`
   "fallback_phrases": {
     "task.complete": ["Construction complete", "Unit ready", "Mission accomplished"],
     "task.acknowledge": ["Acknowledged", "Affirmative", "Orders received"],
+    "task.error": ["Operation failed", "Unit lost"],
     "input.required": ["Awaiting orders", "Select target"],
     "resource.limit": ["Insufficient funds", "Low power"],
+    "session.end": ["Connection lost", "Signing off"],
     "notification": ["Warning", "Unit lost"]
   }
 }
@@ -114,14 +116,17 @@ The path forward illuminated
 
 ## Fallback Phrases
 
-When the LLM is unavailable (no API key, timeout, etc.), VoiceForge picks a random phrase from `fallback_phrases`. Categories:
+When the LLM is unavailable (no API key, timeout, etc.), VoiceForge picks a random phrase from `fallback_phrases`. Categories (used by Claude Code, Cursor, and OpenClaw):
 
 | Category | When |
 |----------|------|
-| `task.complete` | Claude finishes a task |
+| `task.complete` | Agent finishes a task |
 | `task.acknowledge` | User sends a prompt |
-| `input.required` | Claude needs approval |
+| `task.error` | A tool call fails |
+| `input.required` | Agent needs approval |
 | `resource.limit` | Context window nearing limit |
+| `session.start` | New session begins |
+| `session.end` | Session ends |
 | `notification` | General notification |
 
 If a pack doesn't define fallback phrases, global defaults are used.

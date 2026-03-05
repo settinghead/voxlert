@@ -17,11 +17,12 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const pkg = JSON.parse(readFileSync(join(__dirname, "..", "package.json"), "utf-8"));
 
 const HELP = `
-voiceforge v${pkg.version} — Game character voice notifications for Claude Code
+voiceforge v${pkg.version} — Game character voice notifications for Claude Code, Cursor, and OpenClaw
 
 Usage:
   voiceforge setup               Interactive setup wizard (LLM, voice, TTS, hooks)
   voiceforge hook                Process a hook event from stdin (used by Claude Code hooks)
+  voiceforge cursor-hook         Process a hook event from stdin (used by Cursor hooks)
   voiceforge config              Show current configuration
   voiceforge config show         Show current configuration
   voiceforge config set <k> <v>  Set a config value (supports categories.X dot notation)
@@ -38,6 +39,67 @@ Usage:
   voiceforge help                Show this help message
   voiceforge --version           Show version
 `.trim();
+
+// Cursor hook event name (camelCase) -> VoiceForge internal name (PascalCase)
+const CURSOR_TO_VOICEFORGE_EVENT = {
+  sessionStart: "SessionStart",
+  sessionEnd: "SessionEnd",
+  stop: "Stop",
+  postToolUseFailure: "PostToolUseFailure",
+  preCompact: "PreCompact",
+};
+
+function getLastAssistantFromTranscript(transcriptPath) {
+  try {
+    if (!transcriptPath || !existsSync(transcriptPath)) return null;
+    const raw = readFileSync(transcriptPath, "utf-8");
+    if (!raw || !raw.trim()) return null;
+    const slice = raw.length > 500 ? raw.slice(-500) : raw;
+    return slice.trim();
+  } catch {
+    return null;
+  }
+}
+
+async function runCursorHook() {
+  let input = "";
+  for await (const chunk of process.stdin) {
+    input += chunk;
+  }
+  let payload;
+  try {
+    payload = JSON.parse(input);
+  } catch {
+    process.stdout.write("{}\n");
+    return;
+  }
+  const cursorEvent = payload.hook_event_name || "";
+  const ourEvent = CURSOR_TO_VOICEFORGE_EVENT[cursorEvent];
+  if (!ourEvent) {
+    process.stdout.write("{}\n");
+    return;
+  }
+  const workspaceRoots = payload.workspace_roots;
+  const cwd = Array.isArray(workspaceRoots) && workspaceRoots[0] ? workspaceRoots[0] : "";
+  const translated = {
+    ...payload,
+    hook_event_name: ourEvent,
+    cwd,
+  };
+  if (ourEvent === "Stop" && payload.transcript_path) {
+    const last = getLastAssistantFromTranscript(payload.transcript_path);
+    if (last) translated.last_assistant_message = last;
+  }
+  if (ourEvent === "PostToolUseFailure" && payload.error_message) {
+    translated.error_message = payload.error_message;
+  }
+  try {
+    await processHookEvent(translated);
+  } catch {
+    // best-effort: still return {} so Cursor doesn't error
+  }
+  process.stdout.write("{}\n");
+}
 
 function maskKey(key) {
   if (!key || typeof key !== "string") return "(not set)";
@@ -265,7 +327,7 @@ async function setVolume(val) {
   const sub = args[1] || "";
 
   // First-run: auto-launch setup wizard if ~/.voiceforge/ doesn't exist
-  const skipWizardCmds = ["setup", "hook", "help", "--help", "-h", "--version", "-v"];
+  const skipWizardCmds = ["setup", "hook", "cursor-hook", "help", "--help", "-h", "--version", "-v"];
   if (!skipWizardCmds.includes(cmd) && !existsSync(STATE_DIR)) {
     console.log("Welcome to VoiceForge! Let's get you set up.\n");
     const { runSetup } = await import("./setup.js");
@@ -290,6 +352,11 @@ async function setVolume(val) {
       } catch {
         // invalid input — ignore silently
       }
+      break;
+    }
+
+    case "cursor-hook": {
+      await runCursorHook();
       break;
     }
 

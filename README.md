@@ -7,7 +7,7 @@
 
 # VoiceForge
 
-Give your [Claude Code](https://docs.anthropic.com/en/docs/claude-code) and [OpenClaw](https://openclaw.dev) sessions a voice — literally. Iconic characters like SHODAN, the StarCraft Adjutant, the C&C Red Alert EVA, and the HEV Suit narrate what's happening in each window with unique, LLM-generated lines delivered through real-time voice cloning. Never alt-tab to check "which agent just finished?" again.
+LLM-generated voice notifications for [Claude Code](https://docs.anthropic.com/en/docs/claude-code), [Cursor](https://cursor.com/docs/agent/hooks), and [OpenClaw](https://openclaw.dev), spoken by game characters like the StarCraft Adjutant, Kerrigan, C&C EVA, SHODAN, and more.
 
 ### Why VoiceForge?
 
@@ -42,6 +42,7 @@ voiceforge voice    # interactive picker
 flowchart TD
     A1[Claude Code Hook] --> B[voiceforge.sh]
     A2[OpenClaw Hook] --> B
+    A3[Cursor Hook] --> B
     B --> C[src/voiceforge.js]
     C --> D{Event type?}
     D -- "Contextual (e.g. Stop)" --> E[LLM<br><i>generate in-character phrase</i>]
@@ -57,7 +58,7 @@ flowchart TD
     J --> K[afplay / paplay]
 ```
 
-1. A hook event fires (from Claude Code or OpenClaw) — `voiceforge.sh` passes it to `src/voiceforge.js`
+1. A hook event fires (from Claude Code, Cursor, or OpenClaw) — `voiceforge.sh` or `voiceforge cursor-hook` passes it to `src/voiceforge.js`
 2. The event is mapped to a category and the active voice pack is loaded
 3. Contextual events (e.g. task completion) send context to the configured LLM, which generates a short in-character phrase; other events use predefined fallback phrases from the pack
 4. The phrase is sent to the configured TTS backend (Chatterbox or Qwen3-TTS) for local speech synthesis with per-pack voice cloning parameters
@@ -183,7 +184,7 @@ cd voiceforge
 bash install.sh    # launches the setup wizard
 ```
 
-Both paths run an interactive wizard that configures your LLM provider, API key, voice pack, TTS server, and Claude Code hooks. Run `voiceforge setup` again at any time to reconfigure.
+Both paths run an interactive wizard that configures your LLM provider, API key, voice pack, TTS server, Claude Code hooks, and optionally Cursor hooks. Run `voiceforge setup` again at any time to reconfigure.
 
 ## OpenClaw Integration
 
@@ -205,6 +206,41 @@ Or from inside a Claude Code / OpenClaw session, just ask your agent:
 | `message:received` | UserPromptSubmit | `task.acknowledge` |
 
 Configuration is shared with VoiceForge — run `voiceforge setup` to configure. To uninstall: `bash uninstall-openclaw.sh`.
+
+## Cursor Integration
+
+VoiceForge works with [Cursor](https://cursor.com/docs/agent/hooks) Agent (Cmd+K / Agent Chat). Install hooks during setup:
+
+```bash
+voiceforge setup
+```
+
+When prompted **"Install Cursor hooks?"**, choose **Yes** to register VoiceForge in `~/.cursor/hooks.json`. Restart Cursor for hooks to take effect.
+
+Or add the hooks manually to `~/.cursor/hooks.json`:
+
+```json
+{
+  "version": 1,
+  "hooks": {
+    "sessionStart": [{ "command": "voiceforge cursor-hook", "timeout": 10 }],
+    "sessionEnd": [{ "command": "voiceforge cursor-hook", "timeout": 10 }],
+    "stop": [{ "command": "voiceforge cursor-hook", "timeout": 10 }],
+    "postToolUseFailure": [{ "command": "voiceforge cursor-hook", "timeout": 10 }],
+    "preCompact": [{ "command": "voiceforge cursor-hook", "timeout": 10 }]
+  }
+}
+```
+
+| Cursor Hook Event | VoiceForge Event | Category |
+|---|---|---|
+| `sessionStart` | SessionStart | `session.start` |
+| `sessionEnd` | SessionEnd | `session.end` |
+| `stop` | Stop | `task.complete` (LLM-generated when transcript available) |
+| `postToolUseFailure` | PostToolUseFailure | `task.error` (LLM-generated from error message) |
+| `preCompact` | PreCompact | `resource.limit` |
+
+Configuration is shared with VoiceForge at `~/.voiceforge/config.json` (or `voiceforge config path`). Restart Cursor after installing or changing hooks. For a detailed reference and troubleshooting, see [Cursor integration](docs/cursor.md).
 
 ## Configuration
 
@@ -230,6 +266,8 @@ You can also use the `/voiceforge-config` slash command in Claude Code to manage
 
 ```bash
 voiceforge setup                  # Interactive setup wizard (LLM, voice, TTS, hooks)
+voiceforge hook                   # Process hook event from stdin (Claude Code)
+voiceforge cursor-hook            # Process hook event from stdin (Cursor)
 voiceforge voice                  # Interactive voice picker (arrow keys + enter)
 voiceforge pack list              # List available voice packs
 voiceforge pack show              # Show active pack details
@@ -246,17 +284,20 @@ voiceforge --version              # Show version
 
 ## Event Categories
 
+Event categories apply to Claude Code, Cursor, and OpenClaw where the corresponding hook exists.
+
 | Category | Hook Event | Description | Default |
 |---|---|---|---|
-| `session.start` | SessionStart | New Claude Code session begins | on |
-| `task.complete` | Stop | Claude finishes a task (LLM-generated phrase) | on |
+| `session.start` | SessionStart | New session begins | on |
+| `session.end` | SessionEnd | Session ends | on |
+| `task.complete` | Stop | Agent finishes a task (LLM-generated phrase) | on |
 | `task.acknowledge` | UserPromptSubmit | User sends a prompt | off |
-| `task.error` | PostToolUseFailure | A Bash tool call fails (LLM-generated phrase) | on |
-| `input.required` | PermissionRequest | Claude needs user approval | on |
+| `task.error` | PostToolUseFailure | A tool call fails (LLM-generated phrase) | on |
+| `input.required` | PermissionRequest | Agent needs user approval | on |
 | `resource.limit` | PreCompact | Context window nearing limit | on |
 | `notification` | Notification | General notification | on |
 
-Additional hook events (SessionEnd, SubagentStart) are registered but use the closest matching category.
+Additional hook events (e.g. SubagentStart) are registered in Claude Code but use the closest matching category.
 
 ## Linux Support
 
@@ -276,7 +317,7 @@ spawn("pw-play", [cachePath], { stdio: ["ignore", "ignore", "ignore"] });
 bash ~/.claude/hooks/voiceforge/uninstall.sh
 ```
 
-This removes hooks from Claude Code settings and cleans up installed files. You'll be prompted to keep or remove your config and cached audio.
+This removes hooks from Claude Code and Cursor and cleans up installed files. You'll be prompted to keep or remove your config and cached audio.
 
 ## Advanced
 

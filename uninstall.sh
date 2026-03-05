@@ -42,6 +42,34 @@ else
     echo "  No settings.json found — skipping hook removal"
 fi
 
+# --- Remove Cursor hooks ---
+CURSOR_HOOKS="$HOME/.cursor/hooks.json"
+if [[ -f "$CURSOR_HOOKS" ]]; then
+    node -e "
+const fs = require('fs');
+const p = process.env.CURSOR_HOOKS || '';
+if (!p || !fs.existsSync(p)) process.exit(0);
+const c = JSON.parse(fs.readFileSync(p, 'utf-8'));
+if (!c.hooks || typeof c.hooks !== 'object') process.exit(0);
+let removed = 0;
+for (const event of Object.keys(c.hooks)) {
+    const arr = c.hooks[event];
+    if (!Array.isArray(arr)) continue;
+    const before = arr.length;
+    c.hooks[event] = arr.filter(entry => {
+        const cmd = (entry && entry.command) || '';
+        return !cmd.includes('voiceforge') && !cmd.includes('cursor-hook');
+    });
+    removed += before - c.hooks[event].length;
+    if (c.hooks[event].length === 0) delete c.hooks[event];
+}
+fs.writeFileSync(p, JSON.stringify(c, null, 2) + '\n');
+console.log('  Removed ' + removed + ' Cursor hook(s) from ~/.cursor/hooks.json');
+"
+else
+    echo "  No ~/.cursor/hooks.json found — skipping Cursor hook removal"
+fi
+
 # --- Remove skill ---
 if [[ -d "$SKILL_DIR" ]]; then
     rm -rf "$SKILL_DIR"
@@ -66,4 +94,4 @@ fi
 
 echo ""
 echo "=== Uninstall Complete ==="
-echo "VoiceForge has been removed from Claude Code."
+echo "VoiceForge has been removed from Claude Code and Cursor."

@@ -19,6 +19,7 @@
   "volume": 1.0,
   "categories": {
     "session.start": true,
+    "session.end": true,
     "task.complete": true,
     "task.acknowledge": false,
     "task.error": true,

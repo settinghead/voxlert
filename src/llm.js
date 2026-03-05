@@ -60,6 +60,14 @@ export function extractContext(eventData) {
     return null;
   }
 
+  if (event === "PostToolUseFailure") {
+    const err = eventData.error_message || "";
+    if (err) {
+      return `Tool failed: ${err.slice(0, 280)}`;
+    }
+    return null;
+  }
+
   return null;
 }
 

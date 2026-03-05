@@ -1,7 +1,7 @@
 {
   "name": "@settinghead/voiceforge",
   "version": "0.3.0",
-  "description": "Game character voice notifications for Claude Code",
+  "description": "LLM-generated voice notifications for Claude Code, Cursor, and OpenClaw, spoken by game characters like the StarCraft Adjutant, Kerrigan, C&C EVA, SHODAN, and more.",
   "type": "module",
   "bin": {
     "voiceforge": "src/cli.js"

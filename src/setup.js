@@ -16,6 +16,7 @@ import { listPacks } from "./packs.js";
 import { CONFIG_PATH, PACKS_DIR, CACHE_DIR, IS_NPM_GLOBAL, BUNDLED_PACKS_DIR, SCRIPT_DIR } from "./paths.js";
 import { LLM_PROVIDERS, getProvider } from "./providers.js";
 import { registerHooks, installSkill } from "./hooks.js";
+import { registerCursorHooks } from "./cursor-hooks.js";
 
 /**
  * Probe a URL with a GET request. Resolves true if any response comes back.
@@ -313,6 +314,17 @@ export async function runSetup({ fromInstallSh = false } = {}) {
     console.log("  Installed voiceforge-config skill");
   }
 
+  const installCursor = await confirm({
+    message: "Install Cursor hooks? (voice notifications in Cursor Agent / Cmd+K)",
+    default: false,
+  });
+  if (installCursor) {
+    const cursorCommand = "voiceforge cursor-hook";
+    const cursorCount = registerCursorHooks(cursorCommand);
+    console.log(`  Registered ${cursorCount} hook events in ~/.cursor/hooks.json`);
+    console.log("  Restart Cursor for hooks to take effect.");
+  }
+
   // --- Save config ---
   saveConfig(config);
 
@@ -328,5 +340,8 @@ export async function runSetup({ fromInstallSh = false } = {}) {
   console.log(`  Voice:  ${config.active_pack}`);
   console.log(`  TTS:    ${config.tts_backend}`);
   console.log("\n  Start a new Claude Code session to hear VoiceForge!");
+  if (installCursor) {
+    console.log("  Restart Cursor to hear VoiceForge in Agent Chat.");
+  }
   console.log("  To reconfigure: voiceforge setup\n");
 }

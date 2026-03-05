@@ -7,14 +7,16 @@ import { CONFIG_PATH, GLOBAL_USER_CONFIG_PATH, SCRIPT_DIR } from "./paths.js";
 export const EVENT_MAP = {
   Stop: "task.complete",
   SessionStart: "session.start",
+  SessionEnd: "session.end",
   UserPromptSubmit: "task.acknowledge",
   PermissionRequest: "input.required",
   PreCompact: "resource.limit",
+  PostToolUseFailure: "task.error",
   Notification: "notification",
 };
 
 // Events where we call the LLM for a contextual phrase
-export const CONTEXTUAL_EVENTS = new Set(["Stop"]);
+export const CONTEXTUAL_EVENTS = new Set(["Stop", "PostToolUseFailure"]);
 
 // Fallback phrases when LLM is unavailable or for non-contextual events
 export const FALLBACK_PHRASES = {
@@ -53,6 +55,20 @@ export const FALLBACK_PHRASES = {
     "Buffer limit approached.",
     "Context capacity strained.",
     "Power reserves depleted.",
+  ],
+  "session.end": [
+    "Session terminated.",
+    "Connection closed.",
+    "Signing off.",
+    "Session ended.",
+    "Disconnected.",
+  ],
+  "task.error": [
+    "Operation failed.",
+    "Error detected.",
+    "Task aborted.",
+    "Execution error.",
+    "Failure reported.",
   ],
   notification: [
     "Alert received.",
