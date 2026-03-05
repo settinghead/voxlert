@@ -13,7 +13,7 @@ import { extractContext, generatePhrase } from "./llm.js";
 import { speakPhrase } from "./audio.js";
 import { showOverlay } from "./overlay.js";
 import { loadPack } from "./packs.js";
-import { STATE_DIR, LOG_FILE, OPENCLAW_DEBUG_LOG } from "./paths.js";
+import { STATE_DIR, LOG_FILE, HOOK_DEBUG_LOG } from "./paths.js";
 import { appendLog } from "./activity-log.js";
 
 function debugLog(msg, data) {
@@ -22,7 +22,7 @@ function debugLog(msg, data) {
     const line = data !== undefined
       ? `[${new Date().toISOString()}] ${msg} ${JSON.stringify(data)}\n`
       : `[${new Date().toISOString()}] ${msg}\n`;
-    appendFileSync(OPENCLAW_DEBUG_LOG, line);
+    appendFileSync(HOOK_DEBUG_LOG, line);
   } catch {
     // best-effort
   }

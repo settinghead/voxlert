@@ -70,7 +70,7 @@ To remove only Cursor hooks, edit `~/.cursor/hooks.json` and delete the entries 
 
 ## Configuration
 
-VoiceForge uses the same config for Cursor as for Claude Code and OpenClaw:
+VoiceForge uses the same config for Cursor as for Claude Code (and for OpenClaw — see [OpenClaw integration](openclaw.md)):
 
 - Config path: `voiceforge config path` (typically `~/.voiceforge/config.json` or install-dir `config.json`)
 - Toggle categories, voice pack, volume, and LLM/TTS via `voiceforge config` or `voiceforge setup`

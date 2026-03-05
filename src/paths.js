@@ -34,5 +34,5 @@ export const QUEUE_DIR = join(STATE_DIR, "queue");
 export const LOCK_FILE = join(STATE_DIR, "playback.lock");
 export const LOG_FILE = join(STATE_DIR, "fallback.log");
 export const MAIN_LOG_FILE = join(STATE_DIR, "voiceforge.log");
-export const OPENCLAW_DEBUG_LOG = join(STATE_DIR, "openclaw-debug.log");
+export const HOOK_DEBUG_LOG = join(STATE_DIR, "hook-debug.log");
 export const USAGE_FILE = join(STATE_DIR, "usage.jsonl");

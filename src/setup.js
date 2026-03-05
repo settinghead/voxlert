@@ -136,21 +136,6 @@ function ensurePacks() {
   }
 }
 
-const OPENCLAW_SRC = join(SCRIPT_DIR, "openclaw", "voiceforge");
-const OPENCLAW_HOOKS_DEST = join(homedir(), ".openclaw", "hooks", "voiceforge");
-
-/**
- * Install VoiceForge hook for OpenClaw by copying HOOK.md and handler.ts to ~/.openclaw/hooks/voiceforge/.
- * @returns {boolean} true if files were copied
- */
-function installOpenClawHook() {
-  if (!existsSync(OPENCLAW_SRC)) return false;
-  mkdirSync(OPENCLAW_HOOKS_DEST, { recursive: true });
-  copyFileSync(join(OPENCLAW_SRC, "HOOK.md"), join(OPENCLAW_HOOKS_DEST, "HOOK.md"));
-  copyFileSync(join(OPENCLAW_SRC, "handler.ts"), join(OPENCLAW_HOOKS_DEST, "handler.ts"));
-  return true;
-}
-
 export async function runSetup() {
   console.log("\n=== VoiceForge Setup ===\n");
 
@@ -311,7 +296,6 @@ export async function runSetup() {
 
   const platformChoices = [
     { name: "Claude Code", value: "claude", description: "Register in ~/.claude/settings.json + install skill" },
-    { name: "OpenClaw", value: "openclaw", description: "Copy hook to ~/.openclaw/hooks/voiceforge" },
     { name: "Cursor", value: "cursor", description: "Register in ~/.cursor/hooks.json (Agent / Cmd+K)" },
   ];
 
@@ -329,15 +313,6 @@ export async function runSetup() {
     console.log(`  Registered ${hookCount} hook events in ~/.claude/settings.json`);
     if (installSkill()) {
       console.log("  Installed voiceforge-config skill");
-    }
-  }
-
-  if (selectedPlatforms.includes("openclaw")) {
-    if (installOpenClawHook()) {
-      console.log("  Installed OpenClaw hook at ~/.openclaw/hooks/voiceforge");
-      console.log("  Run 'openclaw hooks list' to verify; start an OpenClaw session to hear VoiceForge.");
-    } else {
-      console.log("  OpenClaw hook files not found (install from a git clone that includes openclaw/).");
     }
   }
 
@@ -368,9 +343,6 @@ export async function runSetup() {
   console.log("\n  Start a new session in each platform you installed to hear VoiceForge!");
   if (selectedPlatforms.includes("claude")) {
     console.log("  Claude Code: start a new Claude Code session.");
-  }
-  if (selectedPlatforms.includes("openclaw")) {
-    console.log("  OpenClaw: run 'openclaw hooks list' then start an OpenClaw session.");
   }
   if (selectedPlatforms.includes("cursor")) {
     console.log("  Cursor: restart Cursor to hear VoiceForge in Agent Chat.");

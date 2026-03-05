@@ -116,7 +116,7 @@ The path forward illuminated
 
 ## Fallback Phrases
 
-When the LLM is unavailable (no API key, timeout, etc.), VoiceForge picks a random phrase from `fallback_phrases`. Categories (used by Claude Code, Cursor, and OpenClaw):
+When the LLM is unavailable (no API key, timeout, etc.), VoiceForge picks a random phrase from `fallback_phrases`. Categories (used by Claude Code, Cursor, and OpenClaw via plugin — see [OpenClaw integration](openclaw.md)):
 
 | Category | When |
 |----------|------|

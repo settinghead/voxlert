@@ -16,7 +16,7 @@
     "assets/*.gif",
     "config.default.json",
     "voiceforge.sh",
-    "openclaw/",
+    "openclaw-plugin/",
     "LICENSE"
   ],
   "scripts": {
