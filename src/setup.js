@@ -200,19 +200,32 @@ export async function runSetup() {
   mkdirSync(CACHE_DIR, { recursive: true });
 
   const config = loadConfig();
+  const currentBackend = config.llm_backend || "openrouter";
+  const currentProvider = getProvider(currentBackend);
+  const currentModel = config.llm_model || currentProvider?.defaultModel || "default";
 
   // --- Step 1: LLM Provider ---
   console.log("Step 1/6: LLM Provider\n");
 
   const providerChoices = [
     ...Object.entries(LLM_PROVIDERS).map(([id, p]) => ({
-      name: id === "openrouter" ? `${p.name} (recommended) — ${p.description}` : `${p.name} — ${p.description}`,
+      name: [
+        p.name,
+        id === currentBackend ? `(current: ${currentModel})` : "",
+        id === "openrouter" ? "(recommended)" : "",
+        "—",
+        p.description,
+      ].filter(Boolean).join(" "),
       value: id,
     })),
-    { name: "Skip — fallback phrases only, no API key needed", value: "skip" },
+    {
+      name: currentBackend === "local" || !config.llm_api_key
+        ? "Skip (current: fallback only) — fallback phrases only, no API key needed"
+        : "Skip — fallback phrases only, no API key needed",
+      value: "skip",
+    },
   ];
 
-  const currentBackend = config.llm_backend || "openrouter";
   const chosenProvider = await select({
     message: "Which LLM provider would you like to use?",
     choices: providerChoices,
@@ -378,8 +391,14 @@ export async function runSetup() {
     const ttsChoice = await select({
       message: "Both TTS servers detected. Which one to use?",
       choices: [
-        { name: "Chatterbox (port 8004)", value: "chatterbox" },
-        { name: "Qwen TTS (port 8100)", value: "qwen" },
+        {
+          name: config.tts_backend === "chatterbox" ? "Chatterbox (current, port 8004)" : "Chatterbox (port 8004)",
+          value: "chatterbox",
+        },
+        {
+          name: config.tts_backend === "qwen" ? "Qwen TTS (current, port 8100)" : "Qwen TTS (port 8100)",
+          value: "qwen",
+        },
       ],
       default: config.tts_backend || "chatterbox",
     });
