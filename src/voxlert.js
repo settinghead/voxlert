@@ -74,8 +74,15 @@ export async function processHookEvent(eventData) {
     return;
   }
 
-  // Check if category is enabled
-  const categories = config.categories || {};
+  // Check source-specific overrides (config.sources.<source>.enabled / .categories)
+  const sourceOverride = (config.sources || {})[source] || {};
+  if (sourceOverride.enabled === false) {
+    debugLog("processHookEvent skip: source disabled", { source });
+    return;
+  }
+
+  // Check if category is enabled (source-specific categories take precedence)
+  const categories = { ...(config.categories || {}), ...(sourceOverride.categories || {}) };
   if (categories[category] === false) {
     debugLog("processHookEvent skip: category disabled", { source, category });
     return;
