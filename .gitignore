@@ -1,4 +1,5 @@
 config.json
+!.changeset/config.json
 cache/
 llm_collect/
 .sound.pid
