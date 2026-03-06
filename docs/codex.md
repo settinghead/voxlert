@@ -28,6 +28,8 @@ Other Codex notify types are ignored (no-op, exit 0).
 
 Point Codex's `notify` at VoiceForge. Codex passes the notification JSON as one argument to the command.
 
+If you select **Codex** during `voiceforge setup`, VoiceForge will install or update this entry for you automatically.
+
 **User config:** `~/.codex/config.toml` (or `$CODEX_HOME/config.toml`):
 
 ```toml

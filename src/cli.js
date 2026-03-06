@@ -17,6 +17,7 @@ import { CONFIG_PATH, STATE_DIR, LOG_FILE, MAIN_LOG_FILE, HOOK_DEBUG_LOG } from 
 import { processHookEvent } from "./voiceforge.js";
 import { unregisterHooks, removeSkill } from "./hooks.js";
 import { unregisterCursorHooks } from "./cursor-hooks.js";
+import { unregisterCodexNotify } from "./codex-config.js";
 import { getUpgradeInfo, printUpgradeNotification } from "./upgrade-check.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -49,7 +50,7 @@ Usage:
   voiceforge test "<text>"       Run full pipeline: LLM -> TTS -> audio playback
   voiceforge cost                Show accumulated token usage and estimated cost
   voiceforge cost reset          Clear the usage log
-  voiceforge uninstall           Remove hooks from Claude Code & Cursor, optionally config/cache
+  voiceforge uninstall           Remove hooks from Claude Code, Cursor, and Codex, optionally config/cache
   voiceforge help                Show this help message
   voiceforge --version           Show version
 `.trim();
@@ -491,12 +492,17 @@ async function runUninstall() {
     console.log(`  Removed ${cursorRemoved} hook(s) from ~/.cursor/hooks.json`);
   }
 
+  const codexRemoved = unregisterCodexNotify();
+  if (codexRemoved) {
+    console.log("  Removed notify from ~/.codex/config.toml");
+  }
+
   const skillRemoved = removeSkill();
   if (skillRemoved) {
     console.log("  Removed voiceforge-config skill");
   }
 
-  if (claudeRemoved === 0 && cursorRemoved === 0 && !skillRemoved) {
+  if (claudeRemoved === 0 && cursorRemoved === 0 && !codexRemoved && !skillRemoved) {
     console.log("  No VoiceForge hooks or skill were found.");
   }
 

@@ -103,7 +103,7 @@ npm install -g @settinghead/voiceforge
 voiceforge setup
 ```
 
-The setup wizard configures your LLM provider, API key, **voice pack download** (from GitHub), active voice pack, TTS server, and **which platforms** get hooks. In Step 3 you choose which voice packs to download; in Step 6 you choose platforms (**Claude Code**, **Cursor**). For OpenClaw, use the separate [OpenClaw plugin](docs/openclaw.md). Run `voiceforge setup` again anytime to reconfigure or add another platform.
+The setup wizard configures your LLM provider, API key, **voice pack download** (from GitHub), active voice pack, TTS server, and **which platforms** get hooks. In Step 3 you choose which voice packs to download; in Step 6 you choose platforms (**Claude Code**, **Cursor**, **Codex**). For Codex, setup installs or updates `notify` in `~/.codex/config.toml`. For OpenClaw, use the separate [OpenClaw plugin](docs/openclaw.md). Run `voiceforge setup` again anytime to reconfigure or add another platform.
 
 3. **For spoken voice**, start at least one TTS backend (see [Qwen3-TTS](qwen3-tts-experiment/README.md) or [Chatterbox](docs/chatterbox-tts.md)), then run `voiceforge setup` again so the wizard can detect it.
 
@@ -122,7 +122,7 @@ VoiceForge supports [OpenClaw](https://openclaw.dev) via a **plugin** that notif
 
 ## Codex Integration
 
-VoiceForge works with [OpenAI Codex](https://developers.openai.com/codex/) via Codex’s **notify** config: when an agent turn completes, Codex runs `voiceforge codex-notify` with a JSON payload and you hear a character voice summary. VoiceForge uses `last-assistant-message` when present and falls back to `input-messages` if needed. See **[Codex integration](docs/codex.md)** for setup (`notify = ["voiceforge", "codex-notify"]` in `~/.codex/config.toml`), config, and troubleshooting.
+VoiceForge works with [OpenAI Codex](https://developers.openai.com/codex/) via Codex’s **notify** config: when an agent turn completes, Codex runs `voiceforge codex-notify` with a JSON payload and you hear a character voice summary. VoiceForge uses `last-assistant-message` when present and falls back to `input-messages` if needed. `voiceforge setup` can install or update the `notify` entry in `~/.codex/config.toml` for you. See **[Codex integration](docs/codex.md)** for setup, config, and troubleshooting.
 
 ## Cursor Integration
 
@@ -189,7 +189,7 @@ You can also use the `/voiceforge-config` slash command in Claude Code to manage
 ### Integrations and hooks
 
 - **Which platforms (Claude Code, Cursor, Codex, OpenClaw)?**  
-  You choose during **setup**: Step 5 asks “Which platforms do you want to install hooks for?” with a **checkbox** for **Claude Code** and **Cursor**. For **OpenClaw**, install the plugin separately — see [OpenClaw integration](docs/openclaw.md). For **Codex**, add `notify = ["voiceforge", "codex-notify"]` to `~/.codex/config.toml` — see [Codex integration](docs/codex.md). Run `voiceforge setup` again to add hooks for a platform you skipped. To **disable** an integration (stop VoiceForge from that platform without changing others), remove that platform’s hooks: run `voiceforge uninstall` to remove Claude Code and Cursor hooks, or edit the platform config by hand (`~/.claude/settings.json`, `~/.cursor/hooks.json`). There is no per-integration on/off in config — only the global **`enabled`** flag turns all VoiceForge processing on or off.
+  You choose during **setup**: Step 5 asks “Which platforms do you want to install hooks for?” with a **checkbox** for **Claude Code**, **Cursor**, and **Codex**. For Codex, setup installs or updates `notify` in `~/.codex/config.toml`. For **OpenClaw**, install the plugin separately — see [OpenClaw integration](docs/openclaw.md). Run `voiceforge setup` again to add hooks for a platform you skipped. To **disable** an integration (stop VoiceForge from that platform without changing others), run `voiceforge uninstall` to remove Claude Code, Cursor, and Codex integration, or edit the platform config by hand (`~/.claude/settings.json`, `~/.cursor/hooks.json`, `~/.codex/config.toml`). There is no per-integration on/off in config — only the global **`enabled`** flag turns all VoiceForge processing on or off.
 
 - **Which hook events (categories)?**  
   Each platform registers a fixed set of hook events. You can turn **categories** on or off so that certain event types are ignored. Categories are shared across all platforms (same setting for Claude Code, Cursor, Codex, and OpenClaw). Set them in config or via CLI:

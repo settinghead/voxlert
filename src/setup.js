@@ -20,6 +20,7 @@ import { PACK_REGISTRY, DEFAULT_DOWNLOAD_PACK_IDS, getPackRegistryBaseUrl } from
 import { LLM_PROVIDERS, getProvider } from "./providers.js";
 import { registerHooks, installSkill } from "./hooks.js";
 import { registerCursorHooks } from "./cursor-hooks.js";
+import { registerCodexNotify, getCodexConfigPath } from "./codex-config.js";
 
 /**
  * Probe a URL with a GET request. Resolves true if any response comes back.
@@ -393,6 +394,7 @@ export async function runSetup() {
   const platformChoices = [
     { name: "Claude Code", value: "claude", description: "Register in ~/.claude/settings.json + install skill" },
     { name: "Cursor", value: "cursor", description: "Register in ~/.cursor/hooks.json (Agent / Cmd+K)" },
+    { name: "Codex", value: "codex", description: "Install/update notify in ~/.codex/config.toml" },
   ];
 
   const selectedPlatforms = await checkbox({
@@ -403,6 +405,9 @@ export async function runSetup() {
 
   // Determine the hook command for Claude Code (used when "claude" is selected)
   const hookCommand = IS_NPM_GLOBAL ? "voiceforge hook" : join(SCRIPT_DIR, "voiceforge.sh");
+  const codexNotifyCommand = IS_NPM_GLOBAL
+    ? ["voiceforge", "codex-notify"]
+    : [process.execPath, join(SCRIPT_DIR, "src", "cli.js"), "codex-notify"];
 
   if (selectedPlatforms.includes("claude")) {
     const hookCount = registerHooks(hookCommand);
@@ -416,6 +421,11 @@ export async function runSetup() {
     const cursorCount = registerCursorHooks("voiceforge cursor-hook");
     console.log(`  Registered ${cursorCount} hook events in ~/.cursor/hooks.json`);
     console.log("  Restart Cursor for hooks to take effect.");
+  }
+
+  if (selectedPlatforms.includes("codex")) {
+    registerCodexNotify(codexNotifyCommand);
+    console.log(`  Installed Codex notify command in ${getCodexConfigPath()}`);
   }
 
   if (selectedPlatforms.length === 0) {
@@ -442,6 +452,9 @@ export async function runSetup() {
   }
   if (selectedPlatforms.includes("cursor")) {
     console.log("  Cursor: restart Cursor to hear VoiceForge in Agent Chat.");
+  }
+  if (selectedPlatforms.includes("codex")) {
+    console.log("  Codex: start a new Codex session to pick up the notify config.");
   }
   console.log("  To reconfigure: voiceforge setup\n");
 }
