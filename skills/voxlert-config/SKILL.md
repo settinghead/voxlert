@@ -1,67 +1,81 @@
 ---
 name: voxlert-config
-description: View and edit Voxlert configuration (voice notifications)
+description: >
+  View and edit Voxlert configuration (voice notifications, alerts, announcements).
+  Trigger when the user asks to change, set, or customize the voice, sound, announcement,
+  alert, or notification style — globally or for a specific project/folder.
+  Examples: "change voice to adjutant", "use starcraft voice for this project",
+  "set alert sound to kerrigan", "make notifications use EVA voice",
+  "change the voice in this folder", "switch to SHODAN for alerts".
 user_invocable: true
 ---
 
 # Voxlert Configuration
 
-Voxlert generates character voice notifications for Claude Code hook events.
+Voxlert generates character voice notifications for Claude Code, Cursor, Codex, and OpenClaw.
 
-## Config File Location
+## Use the CLI for everything
 
-`voxlert config path` — typically `~/.voxlert/config.json` (npm global) or `<repo>/config.json` (run from clone).
+Always use `voxlert` CLI commands to read state and apply changes. Do not guess values or hardcode pack names.
 
-## Configuration Fields
+### Read state
 
-| Field | Type | Default | Description |
-|---|---|---|---|
-| `enabled` | boolean | `true` | Master on/off switch |
-| `openrouter_api_key` | string | `""` | OpenRouter API key for LLM phrase generation |
-| `openrouter_model` | string | `"google/gemini-2.0-flash-001"` | LLM model for generating contextual phrases |
-| `chatterbox_url` | string | `"http://localhost:8004"` | Chatterbox TTS server URL |
-| `active_pack` | string | `"sc2-adjutant"` | Active voice pack ID (see `packs/` directory) |
-| `voice` | string | `"default.wav"` | Legacy voice reference WAV file name (overridden by pack) |
-| `volume` | number | `1.0` | Playback volume (0.0 to 1.0) |
-| `categories` | object | see below | Per-category enable/disable |
+```bash
+voxlert config show           # full current config
+voxlert config path           # where the global config file lives
+voxlert pack list             # all available packs with IDs and descriptions
+voxlert pack show             # details of the currently active pack
+```
 
-### Categories
+### Apply changes (global)
 
-| Category | Hook Event | Default |
-|---|---|---|
-| `session.start` | SessionStart | enabled |
-| `task.complete` | Stop | enabled |
-| `task.acknowledge` | UserPromptSubmit | disabled |
-| `task.error` | PostToolUseFailure | enabled |
-| `input.required` | PermissionRequest | enabled |
-| `resource.limit` | PreCompact | enabled |
-| `notification` | Notification | enabled |
+```bash
+voxlert pack use <pack-id>              # switch voice pack
+voxlert volume <0-100>                  # set volume
+voxlert config set enabled false        # disable voxlert
+voxlert config set categories.task.complete false   # disable a category
+voxlert config set active_pack <id>     # alternative to pack use
+voxlert config set <key> <value>        # set any top-level config field
+                                        # supports dot notation for nested keys
+```
+
+### Apply changes (per-project)
+
+`voxlert config set` writes to the global config. For project-scoped overrides, write a `.voxlert.json` in the project root instead (or `.voxlert/config.json`). Only whitelisted fields are honoured per-project: `enabled`, `active_pack`, `volume`, `categories`, `prefix`, `tts_backend`, `qwen_tts_url`, `overlay`, `overlay_dismiss`, `overlay_style`, `collect_llm_data`, `max_cache_entries`, `logging`, `error_log`. Fields like `openrouter_api_key` and `chatterbox_url` are global-only.
 
 ## Instructions
 
-When the user asks to configure Voxlert:
+### Step 1 — Determine scope
 
-1. **Read** the current config (path may vary; use `voxlert config path` or try `~/.voxlert/config.json`):
+- **Project scope**: user is in a project folder, or says "for this project / in this folder / here" → create/update `.voxlert.json` in cwd.
+- **Global scope**: user says "everywhere / my default" or there is no project context → use CLI commands.
 
-2. **Edit** values using the Edit tool on that file.
+### Step 2 — Look up current state and options via CLI
 
-3. Changes take effect on the next hook event (no restart needed).
+Always run `voxlert config show` first to see what is currently set. If the user's intent involves packs, run `voxlert pack list` to get the actual pack IDs — never guess them.
 
-## Voice Pack Switching
+### Step 3 — Match the user's intent to the right command
 
-Switch voice packs using the CLI:
+| User says | CLI command |
+|---|---|
+| "change voice / character / announcement to X" | `voxlert pack list` → find ID → `voxlert pack use <id>` |
+| "set volume / louder / quieter" | `voxlert volume <0-100>` |
+| "disable / mute / silence voxlert" | `voxlert config set enabled false` |
+| "re-enable / unmute" | `voxlert config set enabled true` |
+| "disable task-complete notifications" | `voxlert config set categories.task.complete false` |
+| "enable permission alerts" | `voxlert config set categories.input.required true` |
+| "set any other field" | `voxlert config set <key> <value>` |
+
+For **project scope**, translate the same changes into a `.voxlert.json` file instead of running CLI commands. Check if it already exists (read it first if so) and merge only the changed field(s).
+
+### Step 4 — Confirm
+
+Tell the user what changed and where. Changes take effect on the next hook event — no restart needed.
+
+## Cache
+
+After switching voice pack, clear cached audio so phrases re-render with the new voice:
+
 ```bash
-voxlert pack list              # List available packs
-voxlert pack use <pack-id>     # Switch active pack
+voxlert cache clear
 ```
-
-Or edit `active_pack` in config.json directly. Available packs: `sc1-adjutant`, `sc2-adjutant`, `red-alert-eva`.
-
-## Cache Management
-
-To clear the TTS audio cache (e.g., after changing voice):
-
-```bash
-rm -f ~/.voxlert/cache/*.wav
-```
-(If config path is elsewhere, cache is in the same directory as config, under `cache/`.)
