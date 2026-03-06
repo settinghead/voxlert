@@ -2,6 +2,11 @@
   "name": "@settinghead/voiceforge",
   "version": "0.3.2",
   "description": "LLM-generated voice notifications for Claude Code, Cursor, OpenAI Codex, and OpenClaw, spoken by game characters like the StarCraft Adjutant, Kerrigan, C&C EVA, SHODAN, and more.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/settinghead/voiceforge.git"
+  },
+  "homepage": "https://github.com/settinghead/voiceforge",
   "type": "module",
   "bin": {
     "voiceforge": "src/cli.js"
@@ -22,7 +27,14 @@
   "scripts": {
     "start": "node src/voiceforge.js",
     "postinstall": "node src/postinstall.js",
+    "changeset": "changeset",
+    "version": "changeset version",
+    "release": "changeset publish",
     "test": "node --test ./test/*.test.js"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
   },
   "license": "MIT",
   "dependencies": {
@@ -31,5 +43,9 @@
     "@inquirer/input": "^4.1.0",
     "@inquirer/select": "^5.1.0",
     "node-notifier": "^10.0.1"
+  },
+  "devDependencies": {
+    "@changesets/changelog-github": "^0.6.0",
+    "@changesets/cli": "^2.30.0"
   }
 }

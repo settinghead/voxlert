@@ -4,6 +4,12 @@
   </a>
 </p>
 
+<p align="center">
+  <a href="https://github.com/settinghead/voiceforge/actions/workflows/cli-integration.yml">
+    <img src="https://github.com/settinghead/voiceforge/actions/workflows/cli-integration.yml/badge.svg" alt="CLI Integration" />
+  </a>
+</p>
+
 # VoiceForge
 
 LLM-generated voice notifications for [Claude Code](https://docs.anthropic.com/en/docs/claude-code), [Cursor](https://cursor.com/docs/agent/hooks), [OpenAI Codex](https://developers.openai.com/codex/), and [OpenClaw](https://openclaw.dev), spoken by game characters like the StarCraft Adjutant, Kerrigan, C&C EVA, SHODAN, and more.
@@ -84,6 +90,20 @@ You should hear a phrase and see a notification. If you do not hear speech, chec
 ### From a git clone
 
 Run `npm install` inside `cli/`, then use `node src/cli.js` or link it globally if you prefer. Config and cache live in `~/.voiceforge` (Windows: `%USERPROFILE%\.voiceforge`).
+
+## Development
+
+Run tests locally with:
+
+```bash
+npm test
+```
+
+For release-impacting changes, add a changeset before opening a PR:
+
+```bash
+npm run changeset
+```
 
 ## Supported Voices
 
