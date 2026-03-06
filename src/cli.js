@@ -13,11 +13,11 @@ import { speakPhrase } from "./audio.js";
 import { showOverlay } from "./overlay.js";
 import { loadPack, listPacks } from "./packs.js";
 import { formatCost, resetUsage } from "./cost.js";
-import { CONFIG_PATH, STATE_DIR, LOG_FILE, MAIN_LOG_FILE, HOOK_DEBUG_LOG } from "./paths.js";
+import { CONFIG_PATH, STATE_DIR, LOG_FILE, MAIN_LOG_FILE, HOOK_DEBUG_LOG, SCRIPT_DIR, IS_NPM_GLOBAL } from "./paths.js";
 import { processHookEvent } from "./voiceforge.js";
 import { unregisterHooks, removeSkill } from "./hooks.js";
 import { unregisterCursorHooks } from "./cursor-hooks.js";
-import { unregisterCodexNotify } from "./codex-config.js";
+import { unregisterCodexNotify, getCodexConfigPath } from "./codex-config.js";
 import { getUpgradeInfo, printUpgradeNotification } from "./upgrade-check.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -86,6 +86,12 @@ function stringifyForLog(value, limit = 1000) {
   } catch {
     return String(value);
   }
+}
+
+function listEnvKeys(prefixes) {
+  return Object.keys(process.env)
+    .filter((key) => prefixes.some((prefix) => key.startsWith(prefix)))
+    .sort();
 }
 
 function isPromptAbort(err) {
@@ -157,6 +163,18 @@ async function runCodexNotify() {
   const argvTail = process.argv.slice(3);
   const rawArg = argvTail[0] === "--" ? argvTail[1] : argvTail[0];
   const raw = typeof rawArg === "string" ? rawArg : "";
+  appendHookDebugLine(`voiceforge codex-notify runtime ${stringifyForLog({
+    pid: process.pid,
+    ppid: process.ppid,
+    execPath: process.execPath,
+    node: process.version,
+    cwd: process.cwd(),
+    scriptDir: SCRIPT_DIR,
+    isNpmGlobal: IS_NPM_GLOBAL,
+    configPath: CONFIG_PATH,
+    codexConfigPath: getCodexConfigPath(),
+    envKeys: listEnvKeys(["CODEX", "VOICEFORGE", "OPENAI"]),
+  })}`);
   appendHookDebugLine(`voiceforge codex-notify argv_tail=${stringifyForLog(argvTail)} raw=${stringifyForLog(raw)}`);
   if (!raw || typeof raw !== "string") {
     appendHookDebugLine("voiceforge codex-notify exiting: missing raw payload");
@@ -166,6 +184,16 @@ async function runCodexNotify() {
   try {
     payload = JSON.parse(raw);
     appendHookDebugLine(`voiceforge codex-notify parsed payload ${stringifyForLog(payload)}`);
+    appendHookDebugLine(`voiceforge codex-notify payload summary ${stringifyForLog({
+      type: payload.type || "",
+      cwd: payload.cwd || "",
+      hasLastAssistantMessage: Boolean(payload["last-assistant-message"] || payload.last_assistant_message),
+      inputMessageCount: Array.isArray(payload["input-messages"] || payload.input_messages || payload.inputMessages)
+        ? (payload["input-messages"] || payload.input_messages || payload.inputMessages).length
+        : 0,
+      threadId: payload["thread-id"] || payload.thread_id || "",
+      turnId: payload["turn-id"] || payload.turn_id || "",
+    })}`);
   } catch (err) {
     appendHookDebugLine(`voiceforge codex-notify parse error ${err && err.message}`);
     process.exit(0);
