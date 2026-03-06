@@ -22,7 +22,7 @@
   "scripts": {
     "start": "node src/voiceforge.js",
     "postinstall": "node src/postinstall.js",
-    "test": "node --test test/**/*.test.js"
+    "test": "node --test ./test/*.test.js"
   },
   "license": "MIT",
   "dependencies": {
