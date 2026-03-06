@@ -29,10 +29,96 @@ const ANSI = {
   cyan: "\x1b[36m",
   green: "\x1b[32m",
   yellow: "\x1b[33m",
+  hideCursor: "\x1b[?25l",
+  showCursor: "\x1b[?25h",
+  clear: "\x1b[2J",
+  home: "\x1b[H",
 };
+
+const LOGO_LINES = [
+  "██╗   ██╗ ██████╗ ██╗ ██████╗███████╗███████╗ ██████╗ ██████╗  ██████╗ ███████╗",
+  "██║   ██║██╔═══██╗██║██╔════╝██╔════╝██╔════╝██╔═══██╗██╔══██╗██╔════╝ ██╔════╝",
+  "██║   ██║██║   ██║██║██║     █████╗  █████╗  ██║   ██║██████╔╝██║  ███╗█████╗  ",
+  "╚██╗ ██╔╝██║   ██║██║██║     ██╔══╝  ██╔══╝  ██║   ██║██╔══██╗██║   ██║██╔══╝  ",
+  " ╚████╔╝ ╚██████╔╝██║╚██████╗███████╗██║     ╚██████╔╝██║  ██║╚██████╔╝███████╗",
+  "  ╚═══╝   ╚═════╝ ╚═╝ ╚═════╝╚══════╝╚═╝      ╚═════╝ ╚═╝  ╚═╝ ╚═════╝ ╚══════╝",
+];
+
+function useFancyUi() {
+  return Boolean(process.stdout.isTTY && !process.env.NO_COLOR && process.env.TERM !== "dumb");
+}
 
 function color(text, code) {
   return `${code}${text}${ANSI.reset}`;
+}
+
+function rgb(r, g, b) {
+  return `\x1b[38;2;${r};${g};${b}m`;
+}
+
+function bgRgb(r, g, b) {
+  return `\x1b[48;2;${r};${g};${b}m`;
+}
+
+function interpolate(a, b, t) {
+  return Math.round(a + (b - a) * t);
+}
+
+function animatedLogoLine(text, phase = 0, shimmerIndex = -1) {
+  if (!useFancyUi()) return text;
+  const chars = [...text];
+  const last = Math.max(chars.length - 1, 1);
+  return chars.map((ch, index) => {
+    const t = (index / last) * Math.PI * 2 + phase;
+    let r = Math.round(160 + 95 * Math.sin(t));
+    let g = Math.round(90 + 80 * Math.sin(t + Math.PI / 2));
+    let b = Math.round(185 + 70 * Math.sin(t + Math.PI));
+    let bgR = Math.round(50 + 38 * Math.sin(t - Math.PI / 3));
+    let bgG = Math.round(18 + 18 * Math.sin(t + Math.PI / 2));
+    let bgB = Math.round(60 + 54 * Math.sin(t + Math.PI / 3));
+    if (Math.abs(index - shimmerIndex) <= 1) {
+      r = Math.min(255, r + 70);
+      g = Math.min(255, g + 70);
+      b = Math.min(255, b + 70);
+      bgR = Math.min(255, bgR + 28);
+      bgG = Math.min(255, bgG + 28);
+      bgB = Math.min(255, bgB + 28);
+    }
+    if (ch === " ") {
+      return `${bgRgb(bgR, bgG, bgB)} ${ANSI.reset}`;
+    }
+    return `${bgRgb(bgR, bgG, bgB)}${rgb(r, g, b)}${ANSI.bold}${ch}${ANSI.reset}`;
+  }).join("") + ANSI.reset;
+}
+
+function centerLine(text, width = 92) {
+  const padding = Math.max(0, Math.floor((width - text.length) / 2));
+  return `${" ".repeat(padding)}${text}`;
+}
+
+function renderLogoFrame(config, shimmerStep = -1) {
+  const current = formatCurrentConfig(config).map((line) => `  ${line}`);
+  const rule = color("┈".repeat(92), ANSI.dim);
+  const glow = color("SYNTHETIC VOICE NOTIFICATIONS FOR AGENT WORKFLOWS", ANSI.cyan);
+  const logo = LOGO_LINES.map((line, index) => {
+    const shimmerIndex = shimmerStep >= 0 ? shimmerStep - index * 3 : -1;
+    const phase = shimmerStep >= 0 ? shimmerStep * 0.18 + index * 0.35 : index * 0.35;
+    return centerLine(animatedLogoLine(line, phase, shimmerIndex), 92);
+  });
+  return [
+    "",
+    rule,
+    ...logo,
+    centerLine(glow, 92),
+    rule,
+    "",
+    ...current,
+    "",
+  ].join("\n");
+}
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 function formatCurrentConfig(config) {
@@ -54,14 +140,29 @@ function formatCurrentConfig(config) {
   ];
 }
 
-function printSetupHeader(config) {
-  console.log("");
-  console.log(color("=== VoiceForge Setup ===", ANSI.bold));
-  console.log("");
-  for (const line of formatCurrentConfig(config)) {
-    console.log(`  ${line}`);
+async function printSetupHeader(config) {
+  if (!useFancyUi()) {
+    console.log("");
+    console.log(color("=== VoiceForge Setup ===", ANSI.bold));
+    console.log("");
+    for (const line of formatCurrentConfig(config)) {
+      console.log(`  ${line}`);
+    }
+    console.log("");
+    return;
   }
-  console.log("");
+
+  process.stdout.write(ANSI.hideCursor);
+  try {
+    const frames = Array.from({ length: 16 }, (_, index) => 4 + index * 6);
+    for (const shimmerStep of frames) {
+      process.stdout.write(ANSI.clear + ANSI.home + renderLogoFrame(config, shimmerStep));
+      await sleep(125);
+    }
+    process.stdout.write(ANSI.clear + ANSI.home + renderLogoFrame(config));
+  } finally {
+    process.stdout.write(ANSI.showCursor);
+  }
 }
 
 function printStep(number, title) {
@@ -260,7 +361,7 @@ export async function runSetup() {
   const currentBackend = config.llm_backend || "openrouter";
   const currentProvider = getProvider(currentBackend);
   const currentModel = config.llm_model || currentProvider?.defaultModel || "default";
-  printSetupHeader(config);
+  await printSetupHeader(config);
 
   // --- Step 1: LLM Provider ---
   printStep(1, "LLM Provider");
