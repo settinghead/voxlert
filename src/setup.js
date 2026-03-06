@@ -22,6 +22,65 @@ import { registerHooks, installSkill, unregisterHooks, hasVoiceForgeHooks, hasIn
 import { registerCursorHooks, unregisterCursorHooks, hasCursorHooks } from "./cursor-hooks.js";
 import { registerCodexNotify, getCodexConfigPath, unregisterCodexNotify, hasCodexNotify } from "./codex-config.js";
 
+const ANSI = {
+  reset: "\x1b[0m",
+  bold: "\x1b[1m",
+  dim: "\x1b[2m",
+  cyan: "\x1b[36m",
+  green: "\x1b[32m",
+  yellow: "\x1b[33m",
+};
+
+function color(text, code) {
+  return `${code}${text}${ANSI.reset}`;
+}
+
+function formatCurrentConfig(config) {
+  const provider = getProvider(config.llm_backend || "openrouter");
+  const providerLabel = config.llm_api_key
+    ? `${provider ? provider.name : (config.llm_backend || "openrouter")} (${config.llm_model || provider?.defaultModel || "default"})`
+    : "Fallback only";
+  const ttsLabel = config.tts_backend || "chatterbox";
+  const voiceLabel = config.active_pack || "sc2-adjutant";
+  const platforms = [];
+  if (hasVoiceForgeHooks() || hasInstalledSkill()) platforms.push("Claude");
+  if (hasCursorHooks()) platforms.push("Cursor");
+  if (hasCodexNotify()) platforms.push("Codex");
+  return [
+    `${color("Current", ANSI.dim)} ${providerLabel}`,
+    `${color("Voice", ANSI.dim)}   ${voiceLabel}`,
+    `${color("TTS", ANSI.dim)}     ${ttsLabel}`,
+    `${color("Hooks", ANSI.dim)}   ${platforms.length > 0 ? platforms.join(", ") : "None"}`,
+  ];
+}
+
+function printSetupHeader(config) {
+  console.log("");
+  console.log(color("=== VoiceForge Setup ===", ANSI.bold));
+  console.log("");
+  for (const line of formatCurrentConfig(config)) {
+    console.log(`  ${line}`);
+  }
+  console.log("");
+}
+
+function printStep(number, title) {
+  console.log(color(`Step ${number}/6: ${title}`, ANSI.bold));
+  console.log("");
+}
+
+function printStatus(label, value) {
+  console.log(`  ${color(label, ANSI.dim)} ${value}`);
+}
+
+function printSuccess(message) {
+  console.log(`  ${color("OK", ANSI.green)} ${message}`);
+}
+
+function printWarning(message) {
+  console.log(`  ${color("->", ANSI.yellow)} ${message}`);
+}
+
 /**
  * Probe a URL with a GET request. Resolves true if any response comes back.
  */
@@ -192,8 +251,6 @@ function ensurePacks() {
 }
 
 export async function runSetup() {
-  console.log("\n=== VoiceForge Setup ===\n");
-
   // Ensure config exists
   ensureConfig();
   ensurePacks();
@@ -203,9 +260,10 @@ export async function runSetup() {
   const currentBackend = config.llm_backend || "openrouter";
   const currentProvider = getProvider(currentBackend);
   const currentModel = config.llm_model || currentProvider?.defaultModel || "default";
+  printSetupHeader(config);
 
   // --- Step 1: LLM Provider ---
-  console.log("Step 1/6: LLM Provider\n");
+  printStep(1, "LLM Provider");
 
   const providerChoices = [
     ...Object.entries(LLM_PROVIDERS).map(([id, p]) => ({
@@ -239,8 +297,10 @@ export async function runSetup() {
     const provider = getProvider(chosenProvider);
 
     // --- Step 2: API Key ---
-    console.log(`\nStep 2/6: API Key\n`);
-    console.log(`  Get a key at: ${provider.signupUrl}\n`);
+    console.log("");
+    printStep(2, "API Key");
+    printStatus("Get a key at:", provider.signupUrl);
+    console.log("");
 
     const existingKey = config.llm_api_key ?? config.openrouter_api_key ?? "";
     const maskedExisting = existingKey
@@ -262,7 +322,7 @@ export async function runSetup() {
       process.stdout.write("  Validating key... ");
       const result = await validateApiKey(chosenProvider, apiKey);
       if (result.ok) {
-        console.log("valid!\n");
+        console.log(color("valid!", ANSI.green) + "\n");
       } else {
         console.log(`could not validate (${result.error || "unknown error"})`);
         const proceed = await confirm({
@@ -271,7 +331,8 @@ export async function runSetup() {
         });
         if (!proceed) {
           apiKey = null;
-          console.log("  Skipped — you can set it later with: voiceforge config set llm_api_key <key>\n");
+          printWarning("Skipped. Set it later with: voiceforge config set llm_api_key <key>");
+          console.log("");
         } else {
           console.log("");
         }
@@ -299,12 +360,16 @@ export async function runSetup() {
   } else {
     config.llm_api_key = null;
     config.openrouter_api_key = null;
-    console.log("\n  Skipped — VoiceForge will use fallback phrases from the voice pack.\n");
+    console.log("");
+    printWarning("Using fallback phrases from the voice pack.");
+    console.log("");
   }
 
   // --- Step 3: Download voice packs (from GitHub) ---
-  console.log("\nStep 3/6: Download voice packs\n");
-  console.log("  Voice packs can be downloaded from the VoiceForge GitHub repo.\n");
+  console.log("");
+  printStep(3, "Download voice packs");
+  printStatus("Source", "VoiceForge GitHub repo");
+  console.log("");
 
   mkdirSync(PACKS_DIR, { recursive: true });
   const existingPackIds = new Set();
@@ -321,7 +386,9 @@ export async function runSetup() {
   const packChoices = PACK_REGISTRY.map((p) => ({
     name: existingPackIds.has(p.id) ? `${p.name} (already installed)` : p.name,
     value: p.id,
-    checked: DEFAULT_DOWNLOAD_PACK_IDS.includes(p.id),
+    checked: existingPackIds.size > 0
+      ? existingPackIds.has(p.id)
+      : DEFAULT_DOWNLOAD_PACK_IDS.includes(p.id),
   }));
 
   const toDownload = await checkbox({
@@ -338,14 +405,14 @@ export async function runSetup() {
     process.stdout.write(`  Downloading ${label}... `);
     try {
       await downloadPack(packId, baseUrl);
-      console.log("done.");
+      console.log(color("done.", ANSI.green));
     } catch (err) {
       console.log(`failed (${err.message}).`);
     }
   }
 
   // --- Step 4: Voice Pack ---
-  console.log("Step 4/6: Voice Pack\n");
+  printStep(4, "Voice Pack");
 
   const packs = listPacks();
   if (packs.length > 0) {
@@ -370,11 +437,13 @@ export async function runSetup() {
     });
     config.active_pack = chosenPack;
   } else {
-    console.log("  No voice packs found. Using default.\n");
+    printWarning("No voice packs found. Using default.");
+    console.log("");
   }
 
   // --- Step 5: TTS Server ---
-  console.log("\nStep 5/6: TTS Server\n");
+  console.log("");
+  printStep(5, "TTS Server");
 
   const chatterboxUrl = config.chatterbox_url || "http://localhost:8004";
   const qwenUrl = config.qwen_tts_url || "http://localhost:8100";
@@ -405,18 +474,21 @@ export async function runSetup() {
     config.tts_backend = ttsChoice;
   } else if (qwenUp && !chatterboxUp) {
     config.tts_backend = "qwen";
-    console.log("  Using Qwen TTS.");
+    printSuccess("Using Qwen TTS.");
   } else if (chatterboxUp) {
     config.tts_backend = "chatterbox";
-    console.log("  Using Chatterbox.");
+    printSuccess("Using Chatterbox.");
   } else {
-    console.log("\n  No TTS server detected. VoiceForge will still work with fallback phrases.");
-    console.log("  To set up Chatterbox TTS later, see: https://github.com/resemble-ai/chatterbox");
-    console.log("  To set up Qwen TTS, see the qwen3-tts-server/ directory.\n");
+    console.log("");
+    printWarning("No TTS server detected. VoiceForge will still work with fallback phrases.");
+    printStatus("Chatterbox", "https://github.com/resemble-ai/chatterbox");
+    printStatus("Qwen TTS", "qwen3-tts-server/ directory");
+    console.log("");
   }
 
   // --- Step 6: Hooks (platforms) ---
-  console.log("\nStep 6/6: Hooks — which platforms?\n");
+  console.log("");
+  printStep(6, "Hooks");
 
   const platformChoices = [
     {
@@ -453,69 +525,73 @@ export async function runSetup() {
 
   if (selectedPlatforms.includes("claude")) {
     const hookCount = registerHooks(hookCommand);
-    console.log(`  Registered ${hookCount} hook events in ~/.claude/settings.json`);
+    printSuccess(`Registered ${hookCount} hook events in ~/.claude/settings.json`);
     if (installSkill()) {
-      console.log("  Installed voiceforge-config skill");
+      printSuccess("Installed voiceforge-config skill");
     }
   } else {
     const removed = unregisterHooks();
     const skillRemoved = removeSkill();
     if (removed > 0) {
-      console.log(`  Removed ${removed} hook(s) from ~/.claude/settings.json`);
+      printWarning(`Removed ${removed} hook(s) from ~/.claude/settings.json`);
     }
     if (skillRemoved) {
-      console.log("  Removed voiceforge-config skill");
+      printWarning("Removed voiceforge-config skill");
     }
   }
 
   if (selectedPlatforms.includes("cursor")) {
     const cursorCount = registerCursorHooks("voiceforge cursor-hook");
-    console.log(`  Registered ${cursorCount} hook events in ~/.cursor/hooks.json`);
-    console.log("  Restart Cursor for hooks to take effect.");
+    printSuccess(`Registered ${cursorCount} hook events in ~/.cursor/hooks.json`);
+    printStatus("Next", "Restart Cursor to hear VoiceForge in Agent Chat.");
   } else {
     const cursorRemoved = unregisterCursorHooks();
     if (cursorRemoved > 0) {
-      console.log(`  Removed ${cursorRemoved} hook(s) from ~/.cursor/hooks.json`);
+      printWarning(`Removed ${cursorRemoved} hook(s) from ~/.cursor/hooks.json`);
     }
   }
 
   if (selectedPlatforms.includes("codex")) {
     registerCodexNotify(codexNotifyCommand);
-    console.log(`  Installed Codex notify command in ${getCodexConfigPath()}`);
+    printSuccess(`Installed Codex notify command in ${getCodexConfigPath()}`);
   } else {
     const codexRemoved = unregisterCodexNotify();
     if (codexRemoved) {
-      console.log(`  Removed Codex notify from ${getCodexConfigPath()}`);
+      printWarning(`Removed Codex notify from ${getCodexConfigPath()}`);
     }
   }
 
   if (selectedPlatforms.length === 0) {
-    console.log("  No platforms selected. Run 'voiceforge setup' again to install hooks later.");
+    printWarning("No platforms selected. Run 'voiceforge setup' again to install hooks later.");
   }
 
   // --- Save config ---
   saveConfig(config);
 
   // --- Summary ---
-  console.log("\n=== Setup Complete ===\n");
-  console.log(`  Config: ${CONFIG_PATH}`);
+  console.log("");
+  console.log(color("=== Setup Complete ===", ANSI.bold));
+  console.log("");
+  printStatus("Config", CONFIG_PATH);
   if (chosenProvider !== "skip") {
     const p = getProvider(config.llm_backend);
-    console.log(`  LLM:    ${p ? p.name : config.llm_backend} (${config.llm_model || p?.defaultModel || "default"})`);
+    printStatus("LLM", `${p ? p.name : config.llm_backend} (${config.llm_model || p?.defaultModel || "default"})`);
   } else {
-    console.log("  LLM:    Skipped (fallback phrases only)");
+    printStatus("LLM", "Skipped (fallback phrases only)");
   }
-  console.log(`  Voice:  ${config.active_pack}`);
-  console.log(`  TTS:    ${config.tts_backend}`);
-  console.log("\n  Start a new session in each platform you installed to hear VoiceForge!");
+  printStatus("Voice", config.active_pack);
+  printStatus("TTS", config.tts_backend);
+  console.log("");
+  console.log(`  ${color("Start a new session in each platform you installed to hear VoiceForge.", ANSI.cyan)}`);
   if (selectedPlatforms.includes("claude")) {
-    console.log("  Claude Code: start a new Claude Code session.");
+    printStatus("Claude Code", "Start a new Claude Code session.");
   }
   if (selectedPlatforms.includes("cursor")) {
-    console.log("  Cursor: restart Cursor to hear VoiceForge in Agent Chat.");
+    printStatus("Cursor", "Restart Cursor to hear VoiceForge in Agent Chat.");
   }
   if (selectedPlatforms.includes("codex")) {
-    console.log("  Codex: start a new Codex session to pick up the notify config.");
+    printStatus("Codex", "Start a new Codex session to pick up the notify config.");
   }
-  console.log("  To reconfigure: voiceforge setup\n");
+  printStatus("Reconfigure", "voiceforge setup");
+  console.log("");
 }
