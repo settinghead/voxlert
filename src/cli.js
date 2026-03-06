@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { readFileSync, existsSync, watchFile, rmSync, appendFileSync, mkdirSync } from "fs";
+import { readFileSync, writeFileSync, existsSync, watchFile, rmSync, appendFileSync, mkdirSync } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 import { homedir } from "os";
@@ -31,10 +31,13 @@ Usage:
   voxlert hook                Process a hook event from stdin (used by Claude Code hooks)
   voxlert cursor-hook         Process a hook event from stdin (used by Cursor hooks)
   voxlert codex-notify        Process a notify payload from argv (used by OpenAI Codex notify)
-  voxlert config              Show current configuration
-  voxlert config show         Show current configuration
-  voxlert config set <k> <v>  Set a config value (supports categories.X dot notation)
-  voxlert config path         Print config file path
+  voxlert config                    Show current configuration
+  voxlert config show               Show current configuration
+  voxlert config set <k> <v>        Set a global config value (supports categories.X dot notation)
+  voxlert config path               Print global config file path
+  voxlert config local              Show local (project) config for current directory
+  voxlert config local set <k> <v>  Set a value in .voxlert.json in the current directory
+  voxlert config local path         Print path to local config file
   voxlert log                  Stream activity log (tail -f style)
   voxlert log path            Print activity log file path
   voxlert log error-path      Print error/fallback log file path
@@ -297,6 +300,38 @@ function showConfig() {
   console.log(JSON.stringify(display, null, 2));
 }
 
+function configSetLocal(key, value) {
+  if (!key) {
+    console.error("Usage: voxlert config local set <key> <value>");
+    process.exit(1);
+  }
+
+  let coerced = value;
+  if (value === "null") coerced = null;
+  else if (value === "true") coerced = true;
+  else if (value === "false") coerced = false;
+  else if (value !== "" && !isNaN(Number(value))) coerced = Number(value);
+
+  const filePath = join(process.cwd(), ".voxlert.json");
+  let local = {};
+  try {
+    if (existsSync(filePath)) local = JSON.parse(readFileSync(filePath, "utf-8"));
+  } catch { /* malformed — overwrite */ }
+
+  const dotIdx = key.indexOf(".");
+  if (dotIdx !== -1) {
+    const parent = key.slice(0, dotIdx);
+    const child = key.slice(dotIdx + 1);
+    if (!local[parent] || typeof local[parent] !== "object") local[parent] = {};
+    local[parent][child] = coerced;
+  } else {
+    local[key] = coerced;
+  }
+
+  writeFileSync(filePath, JSON.stringify(local, null, 2) + "\n");
+  console.log(`Set ${key} = ${JSON.stringify(coerced)} in ${filePath}`);
+}
+
 function configSet(key, value) {
   if (!key) {
     console.error("Usage: voxlert config set <key> <value>");
@@ -312,13 +347,15 @@ function configSet(key, value) {
 
   const config = loadConfig(process.cwd());
 
-  // Support dot notation for categories (e.g. categories.notification)
-  const parts = key.split(".");
-  if (parts.length === 2) {
-    if (!config[parts[0]] || typeof config[parts[0]] !== "object") {
-      config[parts[0]] = {};
+  // Support dot notation for nested keys (e.g. categories.task.complete)
+  const dotIdx = key.indexOf(".");
+  if (dotIdx !== -1) {
+    const parent = key.slice(0, dotIdx);
+    const child = key.slice(dotIdx + 1);
+    if (!config[parent] || typeof config[parent] !== "object") {
+      config[parent] = {};
     }
-    config[parts[0]][parts[1]] = coerced;
+    config[parent][child] = coerced;
   } else {
     config[key] = coerced;
   }
@@ -644,6 +681,19 @@ async function runUninstall() {
     case "config":
       if (sub === "set") {
         configSet(args[2], args.slice(3).join(" "));
+      } else if (sub === "local") {
+        if (args[2] === "set") {
+          configSetLocal(args[3], args.slice(4).join(" "));
+        } else if (args[2] === "path") {
+          console.log(join(process.cwd(), ".voxlert.json"));
+        } else {
+          const localPath = join(process.cwd(), ".voxlert.json");
+          if (existsSync(localPath)) {
+            console.log(readFileSync(localPath, "utf-8"));
+          } else {
+            console.log("No local config found in", process.cwd());
+          }
+        }
       } else if (sub === "path") {
         console.log(CONFIG_PATH);
       } else {

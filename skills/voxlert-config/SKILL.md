@@ -34,14 +34,22 @@ voxlert pack use <pack-id>              # switch voice pack
 voxlert volume <0-100>                  # set volume
 voxlert config set enabled false        # disable voxlert
 voxlert config set categories.task.complete false   # disable a category
-voxlert config set active_pack <id>     # alternative to pack use
-voxlert config set <key> <value>        # set any top-level config field
-                                        # supports dot notation for nested keys
+voxlert config set <key> <value>        # set any config field (dot notation supported)
 ```
 
 ### Apply changes (per-project)
 
-`voxlert config set` writes to the global config. For project-scoped overrides, write a `.voxlert.json` in the project root instead (or `.voxlert/config.json`). Only whitelisted fields are honoured per-project: `enabled`, `active_pack`, `volume`, `categories`, `prefix`, `tts_backend`, `qwen_tts_url`, `overlay`, `overlay_dismiss`, `overlay_style`, `collect_llm_data`, `max_cache_entries`, `logging`, `error_log`. Fields like `openrouter_api_key` and `chatterbox_url` are global-only.
+`voxlert config local set` writes to `.voxlert.json` in the current directory, scoping the change to that project only. The same dot notation is supported.
+
+```bash
+voxlert config local set active_pack sc1-adjutant
+voxlert config local set volume 0.6
+voxlert config local set categories.task.complete false
+voxlert config local           # show current local config
+voxlert config local path      # print path to .voxlert.json
+```
+
+Only whitelisted fields are honoured per-project: `enabled`, `active_pack`, `volume`, `categories`, `prefix`, `tts_backend`, `qwen_tts_url`, `overlay`, `overlay_dismiss`, `overlay_style`, `collect_llm_data`, `max_cache_entries`, `logging`, `error_log`. Fields like `openrouter_api_key` and `chatterbox_url` are global-only.
 
 ## Instructions
 
@@ -58,18 +66,26 @@ Always run `voxlert config show` first to see what is currently set. If the user
 
 | User says | CLI command |
 |---|---|
+**Global scope:**
+
+| User says | CLI command |
+|---|---|
 | "change voice / character / announcement to X" | `voxlert pack list` → find ID → `voxlert pack use <id>` |
 | "set volume / louder / quieter" | `voxlert volume <0-100>` |
 | "disable / mute / silence voxlert" | `voxlert config set enabled false` |
 | "re-enable / unmute" | `voxlert config set enabled true` |
-| "disable task-complete notifications" | `voxlert config set categories.task.complete false` |
-| "enable permission alerts" | `voxlert config set categories.input.required true` |
+| "disable a category" | `voxlert config set categories.<name> false` |
+| "enable a category" | `voxlert config set categories.<name> true` |
 | "set any other field" | `voxlert config set <key> <value>` |
 
-For **project scope**, translate the same changes into a `.voxlert.json` file instead of running CLI commands:
-1. Run `ls .voxlert.json 2>/dev/null` to check if it already exists.
-2. If it exists, read it first, merge the new field(s), then overwrite.
-3. If it doesn't exist, create it with only the changed field(s).
+**Project scope** — use `voxlert config local set` which writes/merges into `.voxlert.json` in cwd:
+
+| User says | CLI command |
+|---|---|
+| "change voice for this project" | `voxlert pack list` → find ID → `voxlert config local set active_pack <id>` |
+| "set volume for this project" | `voxlert config local set volume <0-1>` |
+| "disable voxlert for this repo" | `voxlert config local set enabled false` |
+| "disable a category for this project" | `voxlert config local set categories.<name> false` |
 
 ### Step 4 — Confirm
 
