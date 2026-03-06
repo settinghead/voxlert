@@ -118,17 +118,6 @@ curl http://localhost:8100/health | python3 -m json.tool
 | `server.py` | FastAPI TTS server (the main application) |
 | `run.sh` | Starts the server using `venv/bin/python`, `python`, or `python3` |
 | `setup.sh` | First-time setup: creates or repairs `venv`, installs deps, downloads models |
-| `test_clone.py` | Generate a single voice-cloned WAV for one pack. Usage: `python test_clone.py [pack_id] [text]` |
-| `batch_clone.py` | Generate voice-cloned WAVs for 9 predefined packs with character-appropriate lines |
-| `benchmark.py` | Benchmark generation time vs text length across packs. Usage: `python benchmark.py [1.7B\|0.6B]` |
-| `transcribe_packs.py` | Transcribe all voice pack WAVs using Whisper (`base.en`) and write `ref_text` into each `pack.json` |
-| `transcribe_packs_v2.py` | Same as above but uses Whisper `medium.en` for higher accuracy |
-
-The test/benchmark scripts use the **PyTorch** backend directly (not the server). Use the venv interpreter directly:
-
-```bash
-./venv/bin/python test_clone.py sc2-kerrigan "Evolution is inevitable."
-```
 
 ## Voice packs
 
@@ -172,4 +161,4 @@ python3 -c "import torch; print('CUDA:', torch.cuda.is_available())"
 The MLX backend auto-downloads from HuggingFace on first run. If you're behind a proxy, set `HF_HUB_OFFLINE=0` and ensure `huggingface_hub` can reach the internet.
 
 **Pack not showing in /health**  
-The pack needs both `voice.wav` and a non-empty `ref_text` field in `pack.json`. Run `transcribe_packs_v2.py` to auto-generate transcripts.
+The pack needs both `voice.wav` and a non-empty `ref_text` field in `pack.json`. Existing public packs already include `ref_text`; if you are authoring new packs, add a transcript before starting the server.
