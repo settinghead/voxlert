@@ -9,7 +9,7 @@ import {
   statSync,
   utimesSync,
 } from "fs";
-import { join } from "path";
+import { join, dirname, extname } from "path";
 import { createHash } from "crypto";
 import { spawn, execSync } from "child_process";
 import { request as httpsRequest } from "https";
@@ -329,8 +329,12 @@ function normalizeVolume(cachePath) {
 function postProcess(cachePath, command) {
   if (!command || !existsSync(cachePath)) return;
   const tmpOut = cachePath + ".tmp.wav";
-  // Replace $INPUT and $OUTPUT placeholders in command
-  const cmd = command.replace(/\$INPUT/g, cachePath).replace(/\$OUTPUT/g, tmpOut);
+  // Support both $INPUT and ${INPUT} placeholder styles.
+  const cmd = command
+    .replace(/\$\{INPUT\}/g, cachePath)
+    .replace(/\$INPUT/g, cachePath)
+    .replace(/\$\{OUTPUT\}/g, tmpOut)
+    .replace(/\$OUTPUT/g, tmpOut);
   try {
     execSync(cmd, { timeout: 15000, stdio: "ignore" });
     if (existsSync(tmpOut)) {
@@ -340,6 +344,65 @@ function postProcess(cachePath, command) {
   } catch {
     // Post-processing failed — use raw TTS output
     try { unlinkSync(tmpOut); } catch { /* ignore */ }
+  }
+}
+
+function convertAudioFile(inputPath, outputPath) {
+  const ext = extname(outputPath).toLowerCase();
+  try {
+    if (ext === ".mp3") {
+      execSync(
+        `ffmpeg -y -i "${inputPath}" -ar 44100 -ac 1 -c:a libmp3lame -b:a 96k "${outputPath}"`,
+        { timeout: 15000, stdio: "ignore" },
+      );
+      return true;
+    }
+
+    execSync(
+      `ffmpeg -y -i "${inputPath}" -ar 44100 -ac 1 -c:a pcm_s16le "${outputPath}"`,
+      { timeout: 15000, stdio: "ignore" },
+    );
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export async function renderPhraseToFile(phrase, outputPath, config, pack) {
+  const outDir = dirname(outputPath);
+  mkdirSync(outDir, { recursive: true });
+
+  const tempBase = join(outDir, `.tmp-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`);
+  const rawPath = `${tempBase}.raw.wav`;
+  const workingPath = `${tempBase}.wav`;
+  const packId = (pack && pack.id) || "_default";
+  const voicePath = (pack && pack.voicePath) || config.voice || "default.wav";
+  const ttsParams = pack ? pack.tts_params : null;
+  const customAudioFilter = (pack && pack.audio_filter) || null;
+  const postProcessCmd = (pack && pack.post_process) || null;
+  const echo = pack ? pack.echo !== false : true;
+
+  try {
+    await downloadToCache(phrase, rawPath, config, voicePath, ttsParams, packId);
+    if (!existsSync(rawPath)) return false;
+
+    renameSync(rawPath, workingPath);
+
+    if (postProcessCmd) postProcess(workingPath, postProcessCmd);
+    if (customAudioFilter || echo) applyEcho(workingPath, customAudioFilter);
+    normalizeVolume(workingPath);
+
+    return convertAudioFile(workingPath, outputPath);
+  } finally {
+    for (const path of [rawPath, workingPath]) {
+      if (existsSync(path)) {
+        try {
+          unlinkSync(path);
+        } catch {
+          // ignore cleanup failures
+        }
+      }
+    }
   }
 }
 
