@@ -185,20 +185,23 @@ export async function runSetup({ nonInteractive = false } = {}) {
   ensurePacks();
   mkdirSync(CACHE_DIR, { recursive: true });
 
-  const config = loadConfig();
+  const rawConfig = loadConfig();
 
-  // Save partial progress on Ctrl+C so completed steps are preserved
-  const savePartial = () => {
-    try {
-      saveConfig(config);
-      console.log("");
-      printWarning("Setup interrupted — progress saved. Run 'voxlert setup' to resume.");
-      console.log("");
-    } catch {
-      // ignore write errors during exit
-    }
-  };
-  process.on("SIGINT", () => { savePartial(); process.exit(130); });
+  // Auto-persist: any property write saves to disk immediately
+  const config = new Proxy(rawConfig, {
+    set(target, prop, value) {
+      target[prop] = value;
+      try { saveConfig(target); } catch { /* ignore */ }
+      return true;
+    },
+  });
+
+  process.on("SIGINT", () => {
+    console.log("");
+    printWarning("Setup interrupted — progress saved. Run 'voxlert setup' to resume.");
+    console.log("");
+    process.exit(130);
+  });
 
   try {
 
@@ -247,6 +250,7 @@ export async function runSetup({ nonInteractive = false } = {}) {
 
   if (chosenProvider !== "skip") {
     config.llm_backend = chosenProvider;
+
     const provider = getProvider(chosenProvider);
 
     // --- Step 2: API Key ---
@@ -293,26 +297,30 @@ export async function runSetup({ nonInteractive = false } = {}) {
 
       if (apiKey) {
         config.llm_api_key = apiKey;
-        // Clear legacy field if using the new unified field
         if (chosenProvider === "openrouter") {
           config.openrouter_api_key = apiKey;
         }
+    
       } else {
         config.llm_api_key = null;
         config.openrouter_api_key = null;
+    
       }
     } else {
       config.llm_api_key = null;
       config.openrouter_api_key = null;
+  
     }
 
     // Set default model for chosen provider
     if (!config.llm_model && !config.openrouter_model) {
       config.llm_model = provider.defaultModel;
+  
     }
   } else {
     config.llm_api_key = null;
     config.openrouter_api_key = null;
+
     console.log("");
     printWarning("Using fallback phrases from the voice pack.");
     console.log("");
@@ -389,6 +397,7 @@ export async function runSetup({ nonInteractive = false } = {}) {
       default: active || "random",
     });
     config.active_pack = chosenPack;
+
   } else {
     printWarning("No voice packs found. Using default.");
     console.log("");
@@ -412,6 +421,7 @@ export async function runSetup({ nonInteractive = false } = {}) {
 
   config.tts_backend = await chooseTtsBackend(config, { qwenUp, chatterboxUp });
   await verifyTtsSetup(config, config.tts_backend);
+  persist();
 
   // --- Step 6: Hooks (platforms) ---
   console.log("");
@@ -499,9 +509,12 @@ export async function runSetup({ nonInteractive = false } = {}) {
   printSetupSummary(config, "skip", []);
 
   } catch (err) {
-    // Inquirer throws on Ctrl+C (ExitPromptError); save partial progress
+    // Inquirer throws on Ctrl+C (ExitPromptError); progress already persisted
     if (err && (err.name === "ExitPromptError" || err.message === "Prompt was canceled")) {
-      savePartial();
+  
+      console.log("");
+      printWarning("Setup interrupted — progress saved. Run 'voxlert setup' to resume.");
+      console.log("");
       return;
     }
     throw err;
