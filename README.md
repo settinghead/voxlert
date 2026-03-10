@@ -241,6 +241,10 @@ flowchart TD
 5. The chosen phrase is synthesized by the configured TTS backend.
 6. Audio is optionally post-processed, cached, then played through a serialized queue.
 
+### What does it cost?
+
+The LLM step (turning events into in-character phrases) uses a small, cheap model through OpenRouter — not Claude. Each notification costs a fraction of a cent, so even heavy use is negligible. TTS and audio run entirely on your machine at zero cost. You can also skip the LLM entirely and use only fallback phrases from the voice pack (no API key needed).
+
 ## Configuration
 
 Run `voxlert config path` to find `config.json`. You can edit it directly or use `voxlert setup` and `voxlert config set`.
