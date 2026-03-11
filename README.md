@@ -62,8 +62,7 @@ The setup wizard auto-detects running TTS backends. If none are running yet, set
 ### 2. Install and run setup
 
 ```bash
-npm install -g @settinghead/voxlert
-voxlert setup
+npx voxlert --onboard
 ```
 
 The setup wizard configures:

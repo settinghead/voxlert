@@ -53,6 +53,14 @@ async function maybeRunSetup(command) {
 
 (async () => {
   const args = process.argv.slice(2);
+
+  // --onboard flag: run setup wizard directly (supports `npx voxlert --onboard`)
+  if (args.includes("--onboard")) {
+    const { runSetup } = await import("./setup.js");
+    await runSetup();
+    return;
+  }
+
   const requested = args[0] || "help";
   const command = resolveCommand(requested);
 
