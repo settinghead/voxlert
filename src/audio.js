@@ -179,10 +179,10 @@ function releaseLock() {
   }
 }
 
-function enqueue(cachePath, volume) {
+function enqueue(cachePath, volume, remoteUrl) {
   mkdirSync(QUEUE_DIR, { recursive: true });
   const filename = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.json`;
-  writeFileSync(join(QUEUE_DIR, filename), JSON.stringify({ cachePath, volume }));
+  writeFileSync(join(QUEUE_DIR, filename), JSON.stringify({ cachePath, volume, remoteUrl: remoteUrl || null }));
 }
 
 function getNextEntry() {
@@ -236,7 +236,47 @@ function getPlaybackCommand(platform, volume, cachePath) {
   return null;
 }
 
-export function playFile(cachePath, volume) {
+function postToRemote(cachePath, remoteUrl) {
+  return new Promise((resolve) => {
+    let audioData;
+    try {
+      audioData = readFileSync(cachePath);
+    } catch {
+      return resolve();
+    }
+    let url;
+    try {
+      url = new URL(remoteUrl);
+    } catch {
+      return resolve();
+    }
+    const requestFn = url.protocol === "https:" ? httpsRequest : httpRequest;
+    const req = requestFn(
+      url,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "audio/wav",
+          "Content-Length": audioData.length,
+        },
+        timeout: 10000,
+      },
+      (res) => {
+        res.resume();
+        resolve();
+      },
+    );
+    req.on("error", () => resolve());
+    req.on("timeout", () => { req.destroy(); resolve(); });
+    req.write(audioData);
+    req.end();
+  });
+}
+
+export function playFile(cachePath, volume, remoteUrl) {
+  if (remoteUrl) {
+    return postToRemote(cachePath, remoteUrl);
+  }
   return new Promise((resolve) => {
     if (!existsSync(cachePath)) return resolve();
     const platform = process.platform;
@@ -261,7 +301,7 @@ async function processQueue() {
           readFileSync(entryPath, "utf-8"),
         );
         unlinkSync(entryPath);
-        await playFile(entry_data.cachePath, entry_data.volume);
+        await playFile(entry_data.cachePath, entry_data.volume, entry_data.remoteUrl);
       } catch {
         try {
           unlinkSync(entryPath);
@@ -532,6 +572,7 @@ export async function speakPhrase(phrase, config, pack) {
   }
 
   // Enqueue and try to become the player
-  enqueue(cachePath, volume);
+  const remoteUrl = config.remote_playback_url || null;
+  enqueue(cachePath, volume, remoteUrl);
   await processQueue();
 }

@@ -93,6 +93,7 @@ const PROJECT_OVERRIDE_FIELDS = new Set([
   "overlay_style",
   "logging",
   "error_log",
+  "remote_playback_url",
 ]);
 
 /**
