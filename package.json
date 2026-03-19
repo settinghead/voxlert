@@ -34,8 +34,7 @@
     "test": "node --test ./test/*.test.js"
   },
   "publishConfig": {
-    "access": "public",
-    "provenance": true
+    "access": "public"
   },
   "license": "MIT",
   "dependencies": {
