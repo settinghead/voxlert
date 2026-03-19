@@ -12,7 +12,7 @@
 
 # Voxlert
 
-LLM-generated voice notifications for [Claude Code](https://docs.anthropic.com/en/docs/claude-code), [Cursor](https://cursor.com/docs/agent/hooks), [OpenAI Codex](https://developers.openai.com/codex/), and [OpenClaw](https://openclaw.dev), spoken by game characters like the StarCraft Adjutant, Kerrigan, C&C EVA, SHODAN, and more.
+LLM-generated voice notifications for [Claude Code](https://docs.anthropic.com/en/docs/claude-code), [Cursor](https://cursor.com/docs/agent/hooks), [OpenAI Codex](https://developers.openai.com/codex/), [pi](https://github.com/badlogic/pi-mono), and [OpenClaw](https://openclaw.dev), spoken by game characters like the StarCraft Adjutant, Kerrigan, C&C EVA, SHODAN, and more.
 
 ## Why Voxlert?
 
@@ -24,7 +24,7 @@ Voxlert makes each session speak in a distinct character voice with its own tone
 
 Voxlert is for users who:
 
-- Run two or more AI coding agent sessions concurrently (Claude Code, Cursor, Codex, OpenClaw)
+- Run two or more AI coding agent sessions concurrently (Claude Code, Cursor, Codex, pi, OpenClaw)
 - Get interrupted by notification chimes but can't tell which window needs attention
 - Want ambient audio feedback that doesn't require looking at a screen
 - Are comfortable installing local tooling (Node.js, optionally Python for TTS)
@@ -71,7 +71,7 @@ The setup wizard configures:
 - Voice pack downloads
 - Active voice pack
 - TTS backend
-- Platform hooks for Claude Code, Cursor, and Codex
+- Platform hooks for Claude Code, Cursor, Codex, and pi
 
 For OpenClaw, install the separate [OpenClaw plugin](docs/openclaw.md).
 
@@ -188,6 +188,27 @@ voxlert codex-notify
 
 `voxlert setup` can install or update the `notify` entry in `~/.codex/config.toml`. See [Codex integration](docs/codex.md).
 
+### pi
+
+Installed through `voxlert setup`, which copies a TypeScript extension to `~/.pi/agent/extensions/voxlert.ts`. Alternatively, install the pi package directly:
+
+```bash
+pi install npm:@settinghead/pi-voxlert
+```
+
+The extension hooks into pi's lifecycle events and pipes them through `voxlert hook`:
+
+| pi Event | Voxlert Event | Category |
+|---|---|---|
+| `agent_end` | Stop | `task.complete` |
+| `tool_result` (error) | PostToolUseFailure | `task.error` |
+| `session_shutdown` | SessionEnd | `session.end` |
+| `session_before_compact` | PreCompact | `resource.limit` |
+
+The extension also registers a `/voxlert` command (test, status) and a `voxlert_speak` tool that lets the LLM speak phrases on demand.
+
+Run `/reload` in pi or start a new session after installing. See the [pi-voxlert README](pi-package/README.md) for details.
+
 ### OpenClaw
 
 OpenClaw uses a separate plugin. See [OpenClaw integration](docs/openclaw.md) for installation, config, and troubleshooting.
@@ -218,6 +239,7 @@ flowchart TD
     A2[OpenClaw Plugin] --> B
     A3[Cursor Hook] --> B
     A4[Codex notify] --> B
+    A5[pi Extension] --> B
     B --> C[src/voxlert.js]
     C --> D{Event type?}
     D -- "Contextual (e.g. Stop)" --> E[LLM<br><i>generate in-character phrase</i>]
@@ -233,7 +255,7 @@ flowchart TD
     J --> K[afplay / ffplay]
 ```
 
-1. A hook or notify event fires from Claude Code, Cursor, Codex, or OpenClaw.
+1. A hook or notify event fires from Claude Code, Cursor, Codex, pi, or OpenClaw.
 2. Voxlert maps it to an event category and loads the active voice pack.
 3. Contextual events such as task completion or tool failure can use the configured LLM to generate a short in-character phrase.
 4. Other events use predefined fallback phrases from the pack.
@@ -278,7 +300,7 @@ Run `voxlert config path` to find `config.json`. You can edit it directly or use
 
 ### Event categories
 
-Event categories apply across Claude Code, Cursor, Codex, and OpenClaw where the corresponding event exists.
+Event categories apply across Claude Code, Cursor, Codex, pi, and OpenClaw where the corresponding event exists.
 
 | Category | Hook Event | Description | Default |
 |---|---|---|---|
@@ -321,9 +343,9 @@ You can also manage configuration interactively with the `/voxlert-config` slash
 
 ### Integration behavior
 
-- `voxlert setup` installs hooks for Claude Code, Cursor, and Codex.
+- `voxlert setup` installs hooks for Claude Code, Cursor, Codex, and pi.
 - Re-run setup anytime to add a platform you skipped earlier.
-- `voxlert uninstall` removes Claude Code, Cursor, and Codex integration.
+- `voxlert uninstall` removes Claude Code, Cursor, Codex, and pi integration.
 - OpenClaw is managed separately through its plugin.
 - The global `enabled` flag disables processing everywhere; there is no separate per-integration toggle in `config.json`.
 
@@ -353,7 +375,7 @@ voxlert notification           # Choose notification style (popup / system / off
 voxlert test "<text>"          # Run full pipeline: LLM -> TTS -> audio playback
 voxlert cost                   # Show accumulated token usage and estimated cost
 voxlert cost reset             # Clear the usage log
-voxlert uninstall              # Remove hooks from Claude Code, Cursor, and Codex, optionally config/cache
+voxlert uninstall              # Remove hooks from Claude Code, Cursor, Codex, and pi, optionally config/cache
 voxlert help                   # Show help
 voxlert --version              # Show version
 ```
@@ -371,7 +393,7 @@ voxlert uninstall
 npm uninstall -g @settinghead/voxlert
 ```
 
-This removes Voxlert hooks from Claude Code, Cursor, and Codex, the `voxlert-config` skill, and optionally your local config and cache in `~/.voxlert`.
+This removes Voxlert hooks from Claude Code, Cursor, Codex, and pi, the `voxlert-config` skill, and optionally your local config and cache in `~/.voxlert`.
 
 ## Advanced
 

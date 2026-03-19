@@ -21,6 +21,7 @@ import { LLM_PROVIDERS, getProvider } from "./providers.js";
 import { registerHooks, installSkill, unregisterHooks, hasVoxlertHooks, hasInstalledSkill, removeSkill } from "./hooks.js";
 import { registerCursorHooks, unregisterCursorHooks, hasCursorHooks } from "./cursor-hooks.js";
 import { registerCodexNotify, getCodexConfigPath, unregisterCodexNotify, hasCodexNotify } from "./codex-config.js";
+import { installPiExtension, removePiExtension, hasPiExtension } from "./pi-hooks.js";
 import { printSetupHeader, printStep, printStatus, printSuccess, printWarning, highlight } from "./setup-ui.js";
 import {
   probeTtsBackend,
@@ -238,6 +239,7 @@ export async function runSetup({ nonInteractive = false } = {}) {
   if (hasVoxlertHooks() || hasInstalledSkill()) installedPlatforms.push("Claude");
   if (hasCursorHooks()) installedPlatforms.push("Cursor");
   if (hasCodexNotify()) installedPlatforms.push("Codex");
+  if (hasPiExtension()) installedPlatforms.push("pi");
   await printSetupHeader(config, installedPlatforms);
 
   // --- Step 1: LLM Provider ---
@@ -502,6 +504,12 @@ export async function runSetup({ nonInteractive = false } = {}) {
       description: "Install/update notify in ~/.codex/config.toml",
       checked: hasCodexNotify(),
     },
+    {
+      name: "pi",
+      value: "pi",
+      description: "Install extension to ~/.pi/agent/extensions/",
+      checked: hasPiExtension(),
+    },
   ];
 
   const selectedPlatforms = await checkbox({
@@ -551,6 +559,20 @@ export async function runSetup({ nonInteractive = false } = {}) {
     const codexRemoved = unregisterCodexNotify();
     if (codexRemoved) {
       printWarning(`Removed Codex notify from ${getCodexConfigPath()}`);
+    }
+  }
+
+  if (selectedPlatforms.includes("pi")) {
+    if (installPiExtension()) {
+      printSuccess("Installed Voxlert extension to ~/.pi/agent/extensions/voxlert.ts");
+      printStatus("Next", "Run /reload in pi or start a new session to activate.");
+    } else {
+      printWarning("Could not install pi extension (source file not found).");
+    }
+  } else {
+    const piRemoved = removePiExtension();
+    if (piRemoved) {
+      printWarning("Removed Voxlert extension from ~/.pi/agent/extensions/");
     }
   }
 
@@ -680,6 +702,9 @@ function printSetupSummary(config, chosenProvider, selectedPlatforms) {
   }
   if (selectedPlatforms.includes("codex")) {
     printStatus("Codex", "Start a new Codex session to pick up the notify config.");
+  }
+  if (selectedPlatforms.includes("pi")) {
+    printStatus("pi", "Run /reload in pi or start a new session.");
   }
   printStatus("Reconfigure", "voxlert setup");
   console.log("");

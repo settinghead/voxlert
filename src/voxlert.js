@@ -93,6 +93,57 @@ export async function processHookEvent(eventData) {
   const pack = loadPack(config);
   const projectName = cwd ? basename(cwd) : "";
 
+  // Allow callers to bypass LLM generation entirely with a pre-built phrase
+  if (eventData.phrase_override && typeof eventData.phrase_override === "string") {
+    const overridePhrase = eventData.phrase_override.trim();
+    if (overridePhrase) {
+      debugLog("processHookEvent using phrase_override", { source, phrase: overridePhrase.slice(0, 120) });
+
+      // Prepend prefix
+      const prefixTemplate = config.prefix !== undefined ? config.prefix : "${dirname}";
+      let resolvedPrefix = "";
+      if (prefixTemplate !== "") {
+        resolvedPrefix = prefixTemplate.replace(/\$\{dirname\}/g, projectName);
+        if (resolvedPrefix) {
+          const finalPhrase = `${resolvedPrefix}; ${overridePhrase}`;
+          const packId = config.active_pack || "sc1-kerrigan-infested";
+          appendLog(
+            `[${new Date().toISOString()}] source=${source} event=${eventName} category=${category} phrase=${finalPhrase.replace(/\s+/g, " ").slice(0, 120)}`,
+            config,
+          );
+          showOverlay(finalPhrase, {
+            category,
+            packName: pack.name,
+            packId: pack.id || packId,
+            prefix: resolvedPrefix,
+            config,
+            overlayColors: pack.overlay_colors,
+          });
+          await speakPhrase(finalPhrase, config, pack);
+          debugLog("processHookEvent done (phrase_override)", { source });
+          return;
+        }
+      }
+
+      const packId = config.active_pack || "sc1-kerrigan-infested";
+      appendLog(
+        `[${new Date().toISOString()}] source=${source} event=${eventName} category=${category} phrase=${overridePhrase.replace(/\s+/g, " ").slice(0, 120)}`,
+        config,
+      );
+      showOverlay(overridePhrase, {
+        category,
+        packName: pack.name,
+        packId: pack.id || packId,
+        prefix: "",
+        config,
+        overlayColors: pack.overlay_colors,
+      });
+      await speakPhrase(overridePhrase, config, pack);
+      debugLog("processHookEvent done (phrase_override)", { source });
+      return;
+    }
+  }
+
   // For contextual events, try LLM phrase generation
   let phrase = null;
   let fallbackReason = null;

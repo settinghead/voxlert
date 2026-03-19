@@ -1,7 +1,7 @@
 {
   "name": "@settinghead/voxlert",
   "version": "0.3.9",
-  "description": "LLM-generated voice notifications for Claude Code, Cursor, OpenAI Codex, and OpenClaw, spoken by game characters like the StarCraft Adjutant, Kerrigan, C&C EVA, SHODAN, and more.",
+  "description": "LLM-generated voice notifications for Claude Code, Cursor, OpenAI Codex, pi, and OpenClaw, spoken by game characters like the StarCraft Adjutant, Kerrigan, C&C EVA, SHODAN, and more.",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/settinghead/voxlert.git"
@@ -16,6 +16,7 @@
     "packs/*/pack.json",
     "packs/*/voice.wav",
     "skills/",
+    "pi-package/extensions/",
     "assets/*.png",
     "assets/*.jpg",
     "assets/*.gif",

@@ -4,7 +4,7 @@ export function formatHelp(commands, pkg) {
     .map((command) => command.help.join("\n"));
 
   return [
-    `voxlert v${pkg.version} — Game character voice notifications for Claude Code, Cursor, Codex, and OpenClaw`,
+    `voxlert v${pkg.version} — Game character voice notifications for Claude Code, Cursor, Codex, pi, and OpenClaw`,
     "",
     "Usage:",
     ...sections,
