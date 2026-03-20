@@ -91,13 +91,9 @@ const ansi = {
   grey: "\x1b[90m",
 };
 
-function stripAnsi(str) {
-  return str.replace(/\x1b\[[0-9;]*m/g, "");
-}
-
 /**
- * Print upgrade notification to stdout, styled like a terminal box:
- * dark background hint, cyan "Update available!", version range, command, release notes link.
+ * Print upgrade notification to stdout, styled with horizontal separator lines:
+ * yellow lines above and below, bold header, version info, install command, changelog link.
  * Only uses colors when stdout is TTY.
  */
 export function printUpgradeNotification(info, options = {}) {
@@ -110,28 +106,16 @@ export function printUpgradeNotification(info, options = {}) {
     releaseNotesUrl ||
     `https://github.com/settinghead/voxlert/releases/latest`;
 
-  const line1 = `${c.yellow}✨${c.reset} ${c.cyan}Update available!${c.reset} ${info.current} -> ${info.latest}`;
-  const line2 = `Run ${installCmd} to update.`;
-  const line3 = "See full release notes:";
-  const line4 = `${c.cyan}${url}${c.reset}`;
-
-  const padding = 2;
-  const maxLen = Math.max(
-    stripAnsi(line1).length,
-    line2.length,
-    line3.length,
-    url.length
-  );
-  const width = maxLen + padding * 2;
-  const border = "─".repeat(width);
-  const pad = (s) => " ".repeat(Math.max(0, width - 2 - stripAnsi(s).length));
+  const rule = `${c.yellow}${"─".repeat(60)}${c.reset}`;
 
   console.log("");
-  console.log(`${c.grey}┌${border}┐${c.reset}`);
-  console.log(`${c.grey}│${c.reset}${" ".repeat(padding)}${line1}${pad(line1)}${c.grey}│${c.reset}`);
-  console.log(`${c.grey}│${c.reset}${" ".repeat(padding)}${line2}${pad(line2)}${c.grey}│${c.reset}`);
-  console.log(`${c.grey}│${c.reset}${" ".repeat(padding)}${line3}${pad(line3)}${c.grey}│${c.reset}`);
-  console.log(`${c.grey}│${c.reset}${" ".repeat(padding)}${line4}${pad(line4)}${c.grey}│${c.reset}`);
-  console.log(`${c.grey}└${border}┘${c.reset}`);
+  console.log(rule);
+  console.log("");
+  console.log(`  ${c.bold}${c.yellow}Update Available${c.reset}`);
+  console.log(`  New version ${c.bold}${info.latest}${c.reset} is available. Run: ${c.cyan}${installCmd}${c.reset}`);
+  console.log(`  Changelog:`);
+  console.log(`  ${c.cyan}${url}${c.reset}`);
+  console.log("");
+  console.log(rule);
   console.log("");
 }
