@@ -113,12 +113,6 @@ Run tests locally with:
 npm test
 ```
 
-For release-impacting changes, add a changeset before opening a PR:
-
-```bash
-npm run changeset
-```
-
 ## Supported Voices
 
 The `sc1-adjutant` preview below uses the animated in-game portrait GIF from `assets/sc1-adjutant.gif`.

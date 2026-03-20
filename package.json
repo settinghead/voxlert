@@ -28,9 +28,6 @@
   "scripts": {
     "start": "node src/voxlert.js",
     "postinstall": "node src/postinstall.js",
-    "changeset": "changeset",
-    "version": "changeset version",
-    "release": "changeset publish",
     "test": "node --test ./test/*.test.js"
   },
   "publishConfig": {
@@ -43,9 +40,5 @@
     "@inquirer/input": "^4.1.0",
     "@inquirer/select": "^5.1.0",
     "node-notifier": "^10.0.1"
-  },
-  "devDependencies": {
-    "@changesets/changelog-github": "^0.6.0",
-    "@changesets/cli": "^2.30.0"
   }
 }
