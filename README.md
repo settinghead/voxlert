@@ -8,6 +8,9 @@
   <a href="https://github.com/settinghead/voxlert/actions/workflows/cli-integration.yml">
     <img src="https://github.com/settinghead/voxlert/actions/workflows/cli-integration.yml/badge.svg" alt="CLI Integration" />
   </a>
+  <a href="https://fazier.com/launches/voxlert">
+    <img src="https://fazier.com/api/v1//public/badges/launch_badges.svg?badge_type=launched&theme=light" alt="Launched on Fazier" />
+  </a>
 </p>
 
 # Voxlert
