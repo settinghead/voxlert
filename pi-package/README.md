@@ -9,13 +9,16 @@ Voice notifications for [pi](https://github.com/badlogic/pi) powered by [Voxlert
 ## Install
 
 ```bash
-# 1. Install the Voxlert CLI (one-time)
-npm install -g @settinghead/voxlert
-voxlert setup
-
-# 2. Install the pi package
 pi install npm:@settinghead/pi-voxlert
 ```
+
+That's it. On first session, the extension detects that the Voxlert CLI is missing and offers to install + configure it automatically:
+
+- Installs `@settinghead/voxlert` globally
+- Downloads default voice packs (SHODAN, Adjutant, Kerrigan, etc.)
+- Auto-detects your TTS backend (Qwen3-TTS on Apple Silicon, Chatterbox on CUDA)
+
+You can also trigger setup manually anytime with `/voxlert setup`, or run `voxlert setup` in a terminal for full interactive configuration.
 
 ## What it does
 
@@ -30,6 +33,7 @@ Phrases are generated per-event by an LLM, so you hear things like *"Pathetic au
 
 | Command | Description |
 |---------|-------------|
+| `/voxlert setup` | Install CLI + configure with defaults |
 | `/voxlert test` | Fire a test voice notification |
 | `/voxlert status` | Check if Voxlert CLI is available |
 | `/voxlert` | Show help |

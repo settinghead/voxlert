@@ -1,6 +1,6 @@
 {
   "name": "@settinghead/pi-voxlert",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "SHODAN, the StarCraft Adjutant, and GLaDOS narrate your pi coding sessions. LLM-generated voice notifications spoken by game characters — know which agent needs you, by ear.",
   "keywords": ["pi-package", "voxlert", "voice-notifications", "tts", "coding-agent", "notifications", "audio"],
   "repository": {

@@ -95,15 +95,80 @@ export default function (pi: ExtensionAPI) {
   let available = isVoxlertAvailable();
 
   // ------------------------------------------------------------------
-  // Session start: verify Voxlert is installed, fire SessionStart
+  // Guided setup: install CLI + run setup --yes
+  // ------------------------------------------------------------------
+  async function runGuidedSetup(ctx: any): Promise<boolean> {
+    // Step 1: Install the CLI
+    ctx.ui.notify("Installing @settinghead/voxlert...", "info");
+    const install = await pi.exec("npm", ["install", "-g", "@settinghead/voxlert"], {
+      timeout: 120_000,
+    });
+    if (install.code !== 0) {
+      ctx.ui.notify(
+        `Install failed (exit ${install.code}):\n${install.stderr.slice(0, 300)}`,
+        "error",
+      );
+      return false;
+    }
+
+    // Step 2: Run non-interactive setup (downloads voice packs, detects TTS)
+    ctx.ui.notify("Running voxlert setup (downloading voice packs, detecting TTS)...", "info");
+    const setup = await pi.exec("voxlert", ["setup", "--yes"], { timeout: 120_000 });
+    if (setup.code !== 0) {
+      ctx.ui.notify(
+        `Setup failed (exit ${setup.code}):\n${setup.stderr.slice(0, 300)}`,
+        "error",
+      );
+      return false;
+    }
+
+    // Verify it worked
+    available = isVoxlertAvailable();
+    if (available) {
+      ctx.ui.notify(
+        "Voxlert installed and configured!\n\n" +
+          "Voice notifications will now play when the agent finishes a task.\n" +
+          "Run /voxlert test to hear it, or 'voxlert setup' in a terminal for full interactive config.",
+        "info",
+      );
+      ctx.ui.setStatus("voxlert", "🔊 Voxlert");
+      return true;
+    } else {
+      ctx.ui.notify("Install succeeded but voxlert binary not found in PATH.", "error");
+      return false;
+    }
+  }
+
+  // ------------------------------------------------------------------
+  // Session start: verify Voxlert is installed, offer setup if not
   // ------------------------------------------------------------------
   pi.on("session_start", async (_event, ctx) => {
     available = isVoxlertAvailable();
     if (!available) {
-      ctx.ui.notify(
-        "Voxlert not found. Install with: npm install -g @settinghead/voxlert && voxlert setup",
-        "warning",
+      if (!ctx.hasUI) {
+        // Non-interactive mode (print mode, JSON mode) — just warn
+        return;
+      }
+
+      const install = await ctx.ui.confirm(
+        "Voxlert Setup",
+        "Voxlert CLI not found. Install it now?\n\n" +
+          "This will:\n" +
+          "  • npm install -g @settinghead/voxlert\n" +
+          "  • Download default voice packs (SHODAN, Adjutant, etc.)\n" +
+          "  • Auto-detect your TTS backend\n\n" +
+          "You can run full interactive setup later with: voxlert setup",
       );
+
+      if (install) {
+        await runGuidedSetup(ctx);
+      } else {
+        ctx.ui.notify(
+          "Skipped. Run /voxlert setup anytime, or manually:\n" +
+            "  npm install -g @settinghead/voxlert && voxlert setup",
+          "info",
+        );
+      }
     } else {
       ctx.ui.setStatus("voxlert", "🔊 Voxlert");
     }
@@ -168,9 +233,21 @@ export default function (pi: ExtensionAPI) {
     handler: async (args, ctx) => {
       const sub = (args || "").trim().split(/\s+/)[0];
 
+      if (sub === "setup") {
+        if (available) {
+          const redo = await ctx.ui.confirm(
+            "Voxlert Setup",
+            "Voxlert is already installed. Re-run setup with defaults?",
+          );
+          if (!redo) return;
+        }
+        await runGuidedSetup(ctx);
+        return;
+      }
+
       if (sub === "test") {
         if (!available) {
-          ctx.ui.notify("Voxlert CLI not installed.", "error");
+          ctx.ui.notify("Voxlert CLI not installed. Run /voxlert setup first.", "error");
           return;
         }
         fireVoxlert("Stop", ctx.cwd);
@@ -182,7 +259,7 @@ export default function (pi: ExtensionAPI) {
         ctx.ui.notify(
           available
             ? "Voxlert is active. Voice notifications will play on agent_end, tool errors, compaction, and session end."
-            : "Voxlert CLI not found. Run: npm install -g @settinghead/voxlert && voxlert setup",
+            : "Voxlert CLI not found. Run /voxlert setup to install.",
           available ? "info" : "warning",
         );
         return;
@@ -190,10 +267,11 @@ export default function (pi: ExtensionAPI) {
 
       // Default: show help
       ctx.ui.notify(
-        "Usage: /voxlert [test|status]\n" +
+        "Usage: /voxlert [setup|test|status]\n" +
+          "  setup  — install Voxlert CLI and configure with defaults\n" +
           "  test   — fire a test voice notification\n" +
           "  status — check if Voxlert CLI is available\n" +
-          "\nConfigure voice packs, TTS backend, etc. via: voxlert config",
+          "\nFor full interactive config, run in terminal: voxlert setup",
         "info",
       );
     },
