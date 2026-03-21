@@ -16,6 +16,13 @@ A FastAPI server that uses [Qwen3-TTS](https://huggingface.co/Qwen/Qwen3-TTS-12H
 
 ### Quick start
 
+The TTS server is a Python application that lives inside the Voxlert repository. If you installed Voxlert via `npm` or `npx`, you need to clone the repo first to get the server code:
+
+```bash
+git clone https://github.com/settinghead/voxlert.git
+cd voxlert/cli/qwen3-tts-server
+```
+
 **macOS / Linux:** Run the setup script, then start the server:
 
 ```bash

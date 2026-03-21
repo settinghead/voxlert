@@ -222,7 +222,7 @@ export async function chooseTtsBackend(config, { qwenUp, chatterboxUp }) {
     : "";
 
   if (!qwenUp && !chatterboxUp) {
-    printStatus("Note", "Local TTS needs a GPU or Apple Silicon. Setup still works — you'll get text notifications until TTS is running.");
+    printStatus("Note", "Local TTS needs a GPU or Apple Silicon. Setup still works \u2014 you'll get text notifications until TTS is running.");
     console.log("");
   }
 
