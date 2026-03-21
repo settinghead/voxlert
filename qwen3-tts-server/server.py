@@ -42,6 +42,8 @@ voice_prompt_cache: dict[str, list] = {}    # PyTorch: voice_id -> VoiceClonePro
 # MLX voice prompt cache: voice_id -> {speaker_embed, ref_codes, ref_text, audio}
 # Pre-computed at registration time so that generation avoids redundant
 # speaker-encoder and speech-tokenizer work on every cache-miss TTS call.
+# The "audio" field is a minimal stub — the full waveform is not retained
+# because the monkey-patched methods ignore their input.
 _mlx_prompt_cache: dict[str, dict] = {}
 
 # Single-thread executor — keeps all GPU work on ONE thread to respect
@@ -53,20 +55,38 @@ _gpu_executor = concurrent.futures.ThreadPoolExecutor(
 # ---------------------------------------------------------------------------
 # MLX backend
 # ---------------------------------------------------------------------------
+
+# Default: 1.7B-8bit for best voice quality (~2.9 GB: 2.25 GB backbone + 651 MB codec).
+# Override with QWEN_TTS_MLX_MODEL for lower memory at reduced quality:
+#   0.6B-4bit: ~1.63 GB (mlx-community/Qwen3-TTS-12Hz-0.6B-Base-4bit)
+#   0.6B-6bit: ~1.65 GB (mlx-community/Qwen3-TTS-12Hz-0.6B-Base-6bit)
 MLX_MODEL_ID = os.environ.get(
     "QWEN_TTS_MLX_MODEL",
     "mlx-community/Qwen3-TTS-12Hz-1.7B-Base-8bit",
 )
 
+# How much freed Metal memory the MLX allocator may hoard for reuse.
+# Lower = tighter steady-state footprint; higher = fewer re-allocations.
+# 0 disables the cache entirely.  Default: 256 MB.
+_MLX_CACHE_LIMIT = int(os.environ.get("QWEN_TTS_MLX_CACHE_MB", "256")) * 1024 * 1024
+
 
 def _load_mlx():
     global model, model_name
+    import mlx.core as mx
     from mlx_audio.tts.utils import load_model
 
     model_name = MLX_MODEL_ID.split("/")[-1]
     print(f"Loading MLX model {model_name} …")
     model = load_model(MLX_MODEL_ID)
-    print("MLX model loaded.")
+
+    # Cap the Metal allocator's free-buffer cache so freed memory returns
+    # to the OS instead of being held indefinitely for potential reuse.
+    mx.set_cache_limit(_MLX_CACHE_LIMIT)
+
+    active_mb = mx.get_active_memory() / 1024 / 1024
+    print(f"MLX model loaded.  Active Metal memory: {active_mb:.0f} MB  "
+          f"(cache limit: {_MLX_CACHE_LIMIT // 1024 // 1024} MB)")
 
 
 def _precompute_voice_mlx(wav_path: str, ref_text: str) -> dict:
@@ -77,7 +97,7 @@ def _precompute_voice_mlx(wav_path: str, ref_text: str) -> dict:
       speaker_embed: mx.array — x-vector from the speaker encoder
       ref_codes:     mx.array or None — speech tokenizer codes (ICL mode)
       ref_text:      str
-      audio:         mx.array — loaded waveform (avoids re-reading WAV)
+      audio:         mx.array — minimal stub (monkey-patched methods ignore it)
     """
     import mlx.core as mx
     from mlx_audio.utils import load_audio
@@ -98,44 +118,69 @@ def _precompute_voice_mlx(wav_path: str, ref_text: str) -> dict:
         ref_codes = st.encode(audio_enc)
         mx.eval(ref_codes)
 
+    # Replace full waveform with a tiny stub.  The generate() pipeline
+    # requires ref_audio to be a non-None mx.array with ndim >= 1, but
+    # both extract_speaker_embedding and speech_tokenizer.encode are
+    # monkey-patched to return cached values — so the stub is never
+    # actually processed.  This avoids retaining ~0.5-1 MB per voice.
+    audio_stub = mx.zeros((model.sample_rate,))
+
+    # Release the full waveform from Metal memory
+    del audio
+    mx.clear_cache()
     return {
         "speaker_embed": speaker_embed,
         "ref_codes": ref_codes,
         "ref_text": ref_text,
-        "audio": audio,
+        "audio": audio_stub,
     }
+
+
+def _prompt_cache_dir(voice_dir: Path) -> Path:
+    """Return the model-specific prompt cache directory for a voice.
+
+    Layout: voices/<voice_id>/prompts/<model_key>/
+    Each model gets its own namespace so switching models (e.g. 0.6B <-> 1.7B)
+    never requires recomputation — both caches coexist on disk.
+    """
+    model_key = hashlib.sha256(MLX_MODEL_ID.encode()).hexdigest()[:12]
+    return voice_dir / "prompts" / model_key
 
 
 def _save_voice_cache_mlx(voice_dir: Path, prompt: dict):
     """Persist pre-computed voice embeddings as .npy so they survive restarts."""
+    cache_dir = _prompt_cache_dir(voice_dir)
+    cache_dir.mkdir(parents=True, exist_ok=True)
     if prompt["speaker_embed"] is not None:
-        np.save(str(voice_dir / "speaker_embed.npy"), np.array(prompt["speaker_embed"]))
+        np.save(str(cache_dir / "speaker_embed.npy"), np.array(prompt["speaker_embed"]))
     if prompt["ref_codes"] is not None:
-        np.save(str(voice_dir / "ref_codes.npy"), np.array(prompt["ref_codes"]))
+        np.save(str(cache_dir / "ref_codes.npy"), np.array(prompt["ref_codes"]))
 
 
 def _load_voice_cache_mlx(voice_dir: Path, ref_text: str) -> dict | None:
-    """Load persisted voice embeddings from disk. Returns None if not cached."""
+    """Load persisted voice embeddings from disk for the current model.
+
+    Returns None if no cache exists for this model — a different model's
+    cache is simply ignored, not deleted."""
     import mlx.core as mx
-    from mlx_audio.utils import load_audio
 
-    embed_path = voice_dir / "speaker_embed.npy"
-    codes_path = voice_dir / "ref_codes.npy"
-    wav_path = voice_dir / "voice.wav"
-
-    # Must have at least the speaker embedding cached
+    cache_dir = _prompt_cache_dir(voice_dir)
+    embed_path = cache_dir / "speaker_embed.npy"
     if not embed_path.exists():
         return None
 
+    codes_path = cache_dir / "ref_codes.npy"
     speaker_embed = mx.array(np.load(str(embed_path)))
     ref_codes = mx.array(np.load(str(codes_path))) if codes_path.exists() else None
-    audio = load_audio(str(wav_path), sample_rate=model.sample_rate)
+
+    # Minimal stub — see _precompute_voice_mlx for rationale
+    audio_stub = mx.zeros((model.sample_rate,))
 
     return {
         "speaker_embed": speaker_embed,
         "ref_codes": ref_codes,
         "ref_text": ref_text,
-        "audio": audio,
+        "audio": audio_stub,
     }
 
 
@@ -370,7 +415,7 @@ async def upload_voice(
     wav_path.write_bytes(audio_bytes)
     (voice_dir / "meta.json").write_text(json.dumps({"ref_text": ref_text}))
 
-    # Register in memory (both backends now need GPU work)
+    # Register in memory (both backends need GPU work)
     loop = asyncio.get_running_loop()
     if RUNTIME == "mlx":
         await loop.run_in_executor(
@@ -445,24 +490,33 @@ async def tts(req: TTSRequest):
 
 @app.get("/health")
 def health():
-    if RUNTIME == "mlx":
-        voices = sorted(voice_meta.keys())
-        device = "apple-silicon-mlx"
-    else:
-        voices = sorted(voice_prompt_cache.keys())
-        import torch
-        if torch.cuda.is_available():
-            device = "cuda"
-        elif getattr(torch.backends, "mps", None) and torch.backends.mps.is_available():
-            device = "mps"
-        else:
-            device = "cpu"
-    return {
+    info = {
         "model": model_name,
         "runtime": RUNTIME,
-        "device": device,
-        "voices": voices,
     }
+
+    if RUNTIME == "mlx":
+        import mlx.core as mx
+        info["device"] = "apple-silicon-mlx"
+        info["voices"] = sorted(voice_meta.keys())
+        info["memory_mb"] = {
+            "active": round(mx.get_active_memory() / 1024 / 1024),
+            "peak": round(mx.get_peak_memory() / 1024 / 1024),
+            "cache": round(mx.get_cache_memory() / 1024 / 1024),
+        }
+        info["wav_cache_entries"] = len(cache._store)
+    else:
+        import torch
+        if torch.cuda.is_available():
+            info["device"] = "cuda"
+        elif getattr(torch.backends, "mps", None) and torch.backends.mps.is_available():
+            info["device"] = "mps"
+        else:
+            info["device"] = "cpu"
+        info["voices"] = sorted(voice_prompt_cache.keys())
+        info["wav_cache_entries"] = len(cache._store)
+
+    return info
 
 
 if __name__ == "__main__":
