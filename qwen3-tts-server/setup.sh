@@ -99,7 +99,7 @@ download_model "Qwen/Qwen3-TTS-12Hz-1.7B-Base"
 # 0.6B model (optional)
 echo ""
 read -rp "${bold}Download the smaller 0.6B model too? [y/N] ${reset}" choice
-if [[ "${choice,,}" == "y" ]]; then
+if [[ "$choice" == "y" || "$choice" == "Y" ]]; then
     download_model "Qwen/Qwen3-TTS-12Hz-0.6B-Base"
 fi
 
