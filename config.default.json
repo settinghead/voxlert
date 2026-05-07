@@ -19,6 +19,7 @@
   "volume": 1.0,
   "output_channels": ["local"],
   "hub_url": "http://100.64.0.2:7654",
+  "benchday_node": "",
   "logging": true,
   "error_log": false,
   "overlay": true,

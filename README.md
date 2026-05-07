@@ -294,6 +294,7 @@ Run `voxlert config path` to find `config.json`. You can edit it directly or use
 | `volume` | number | `1.0` | Playback volume (0.0-1.0) |
 | `output_channels` | string[] | `["local"]` | Delivery destinations. Use `local` for this machine and `benchday_phone` for Benchday app playback (`hub` remains a compatibility alias). |
 | `hub_url` | string | `"http://100.64.0.2:7654"` | Benchday hub URL used by the `benchday_phone` channel |
+| `benchday_node` | string | `""` | Enrolled Benchday daemon id used for hub-scoped phone audio, for example `xc-mac-studio` |
 | `categories` | object | — | Per-category enable/disable settings |
 | `logging` | boolean | `true` | Activity log in `~/.voxlert/voxlert.log` |
 | `error_log` | boolean | `false` | Fallback/error log in `~/.voxlert/fallback.log` |
@@ -305,6 +306,7 @@ voxlert channel
 # or:
 voxlert config set output_channels '["local","benchday_phone"]'
 voxlert config set hub_url http://100.64.0.2:7654
+voxlert config set benchday_node xc-mac-studio
 ```
 
 ### Event categories

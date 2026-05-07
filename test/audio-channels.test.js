@@ -1,6 +1,11 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { channelPreset, channelsForPreset, normalizeOutputChannels } from "../src/channels.js";
+import {
+  channelPreset,
+  channelsForPreset,
+  normalizeOutputChannels,
+  resolveBenchdayNode,
+} from "../src/channels.js";
 
 test("output channels default to local audio", () => {
   assert.deepEqual(normalizeOutputChannels(undefined), ["local"]);
@@ -23,4 +28,16 @@ test("channel presets round-trip common delivery destinations", () => {
   assert.equal(channelPreset(["benchday_phone"]), "phone");
   assert.equal(channelPreset(["local", "benchday_phone"]), "local_phone");
   assert.deepEqual(channelsForPreset("local_phone"), ["local", "benchday_phone"]);
+});
+
+test("Benchday node prefers configured enrolled daemon id", () => {
+  assert.equal(
+    resolveBenchdayNode(
+      { benchday_node: "xc-mac-studio" },
+      { node: "Xiyangs-Mac-Studio.local" },
+      "fallback-host",
+    ),
+    "xc-mac-studio",
+  );
+  assert.equal(resolveBenchdayNode({}, { node: "hook-host" }, "fallback-host"), "hook-host");
 });

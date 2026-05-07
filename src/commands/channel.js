@@ -37,6 +37,7 @@ async function channelPick() {
   console.log(`Channels: ${formatChannels(config.output_channels)}`);
   if (config.output_channels.includes("benchday_phone")) {
     console.log(`Benchday hub: ${config.hub_url || "http://100.64.0.2:7654"}`);
+    console.log(`Benchday node: ${config.benchday_node || config.benchday_daemon_id || "(not set)"}`);
   }
 }
 

@@ -51,3 +51,14 @@ export function channelsForPreset(preset) {
 export function formatChannels(channels) {
   return normalizeOutputChannels(channels).join(", ");
 }
+
+export function resolveBenchdayNode(config = {}, eventContext = {}, fallbackNode = "") {
+  const configured =
+    config.benchday_node ??
+    config.benchday_daemon_id ??
+    config.daemon_id ??
+    "";
+  const text = String(configured).trim();
+  if (text) return text;
+  return String(eventContext.node || fallbackNode || "").trim();
+}

@@ -516,6 +516,11 @@ export async function runSetup({ nonInteractive = false } = {}) {
       default: config.hub_url || "http://100.64.0.2:7654",
     })).trim();
     config.hub_url = hubUrl || "http://100.64.0.2:7654";
+    const benchdayNode = (await input({
+      message: "Benchday daemon id for this machine:",
+      default: config.benchday_node || config.benchday_daemon_id || "",
+    })).trim();
+    if (benchdayNode) config.benchday_node = benchdayNode;
   }
 
   // --- Step 7: Hooks (platforms) ---

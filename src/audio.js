@@ -16,7 +16,11 @@ import { request as httpsRequest } from "https";
 import { request as httpRequest } from "http";
 import { hostname } from "os";
 import { CACHE_DIR, QUEUE_DIR, LOCK_FILE } from "./paths.js";
-import { BENCHDAY_PHONE_CHANNEL, normalizeOutputChannels } from "./channels.js";
+import {
+  BENCHDAY_PHONE_CHANNEL,
+  normalizeOutputChannels,
+  resolveBenchdayNode,
+} from "./channels.js";
 
 const DEFAULT_MAX_CACHE = 150;
 
@@ -524,7 +528,7 @@ function postToHub(cachePath, phrase, config, pack, eventContext, channel = BENC
     category: eventContext.category || "",
     event: eventContext.event || "",
     source: eventContext.source || "voxlert",
-    node: eventContext.node || hostname(),
+    node: resolveBenchdayNode(config, eventContext, hostname()),
     channels: [channel],
     output_channel: channel,
     timestamp: Date.now() / 1000,

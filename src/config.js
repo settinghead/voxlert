@@ -95,6 +95,8 @@ const PROJECT_OVERRIDE_FIELDS = new Set([
   "error_log",
   "output_channels",
   "hub_url",
+  "benchday_node",
+  "benchday_daemon_id",
 ]);
 
 /**
