@@ -221,6 +221,7 @@ voxlert pack use <pack-id>     # Switch active voice pack
 voxlert config                 # Show current configuration
 voxlert config set <key> <val> # Set a config value
 voxlert volume                 # Show or change playback volume
+voxlert channel                # Choose local / Benchday phone / both
 voxlert notification           # Choose popup / system / off
 voxlert test "<text>"          # Run the full pipeline
 voxlert log                    # Stream activity log
@@ -297,6 +298,15 @@ Run `voxlert config path` to find `config.json`. You can edit it directly or use
 | `logging` | boolean | `true` | Activity log in `~/.voxlert/voxlert.log` |
 | `error_log` | boolean | `false` | Fallback/error log in `~/.voxlert/fallback.log` |
 
+To relay alerts to Benchday while keeping local playback:
+
+```bash
+voxlert channel
+# or:
+voxlert config set output_channels '["local","benchday_phone"]'
+voxlert config set hub_url http://100.64.0.2:7654
+```
+
 ### Event categories
 
 Event categories apply across Claude Code, Cursor, Codex, pi, and OpenClaw where the corresponding event exists.
@@ -359,6 +369,7 @@ voxlert config                 # Show current configuration
 voxlert config show            # Show current configuration
 voxlert config set <k> <v>     # Set a config value (supports categories.X dot notation)
 voxlert config path            # Print config file path
+voxlert channel                # Choose audio destination (local / Benchday phone / both)
 voxlert log                    # Stream activity log (tail -f style)
 voxlert log path               # Print activity log file path
 voxlert log error-path         # Print error/fallback log file path

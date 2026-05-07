@@ -1,4 +1,5 @@
 import { codexNotifyCommand } from "./codex-notify.js";
+import { channelCommand } from "./channel.js";
 import { configCommand } from "./config.js";
 import { costCommand } from "./cost.js";
 import { cursorHookCommand } from "./cursor-hook.js";
@@ -20,6 +21,7 @@ export const COMMANDS = [
   cursorHookCommand,
   codexNotifyCommand,
   configCommand,
+  channelCommand,
   logCommand,
   voiceCommand,
   packCommand,

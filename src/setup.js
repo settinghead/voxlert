@@ -23,6 +23,7 @@ import { registerCursorHooks, unregisterCursorHooks, hasCursorHooks } from "./cu
 import { registerCodexNotify, getCodexConfigPath, unregisterCodexNotify, hasCodexNotify } from "./codex-config.js";
 import { installPiExtension, removePiExtension, hasPiExtension } from "./pi-hooks.js";
 import { printSetupHeader, printStep, printStatus, printSuccess, printWarning, highlight } from "./setup-ui.js";
+import { channelPreset, channelsForPreset, formatChannels } from "./channels.js";
 import {
   probeTtsBackend,
   chooseTtsBackend,
@@ -481,9 +482,45 @@ export async function runSetup({ nonInteractive = false } = {}) {
   config.tts_backend = await chooseTtsBackend(config, { qwenUp, chatterboxUp });
   await verifyTtsSetup(config, config.tts_backend);
 
-  // --- Step 6: Hooks (platforms) ---
+  // --- Step 6: Audio destinations ---
   console.log("");
-  printStep(6, "Hooks");
+  printStep(6, "Audio Destinations");
+  const chosenChannels = await select({
+    message: "Where should Voxlert play generated audio?",
+    choices: [
+      {
+        name: "Local machine only",
+        value: "local",
+        description: "Play through speakers on this machine",
+      },
+      {
+        name: "Local machine + Benchday phone",
+        value: "local_phone",
+        description: "Also relay audio to the Benchday app",
+      },
+      {
+        name: "Benchday phone only",
+        value: "phone",
+        description: "No local playback",
+      },
+    ],
+    default: channelPreset(config.output_channels) === "custom"
+      ? "local"
+      : channelPreset(config.output_channels),
+  });
+  config.output_channels = channelsForPreset(chosenChannels);
+  printStatus("Channels", formatChannels(config.output_channels));
+  if (config.output_channels.includes("benchday_phone")) {
+    const hubUrl = (await input({
+      message: "Benchday hub URL:",
+      default: config.hub_url || "http://100.64.0.2:7654",
+    })).trim();
+    config.hub_url = hubUrl || "http://100.64.0.2:7654";
+  }
+
+  // --- Step 7: Hooks (platforms) ---
+  console.log("");
+  printStep(7, "Hooks");
 
   const platformChoices = [
     {
@@ -667,8 +704,14 @@ async function runNonInteractiveSetup(config) {
   printStatus("TTS", config.tts_backend + (qwenUp || chatterboxUp ? "" : " (not running — text notifications only)"));
   console.log("");
 
-  // Step 6: Hooks — skip
-  printStep(6, "Hooks");
+  // Step 6: Audio destinations — local only
+  printStep(6, "Audio Destinations");
+  config.output_channels = config.output_channels || ["local"];
+  printStatus("Channels", formatChannels(config.output_channels));
+  console.log("");
+
+  // Step 7: Hooks — skip
+  printStep(7, "Hooks");
   printStatus("Hooks", "Skipped (run 'voxlert setup' to install hooks later)");
   console.log("");
 
@@ -692,6 +735,7 @@ function printSetupSummary(config, chosenProvider, selectedPlatforms) {
   }
   printStatus("Voice", config.active_pack);
   printStatus("TTS", config.tts_backend);
+  printStatus("Channels", formatChannels(config.output_channels));
   console.log("");
   console.log(`  ${highlight("Start a new session in each platform you installed to hear Voxlert.")}`);
   if (selectedPlatforms.includes("claude")) {

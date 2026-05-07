@@ -16,33 +16,9 @@ import { request as httpsRequest } from "https";
 import { request as httpRequest } from "http";
 import { hostname } from "os";
 import { CACHE_DIR, QUEUE_DIR, LOCK_FILE } from "./paths.js";
+import { BENCHDAY_PHONE_CHANNEL, normalizeOutputChannels } from "./channels.js";
 
 const DEFAULT_MAX_CACHE = 150;
-const BENCHDAY_PHONE_CHANNEL = "benchday_phone";
-const CHANNEL_ALIASES = new Map([
-  ["hub", BENCHDAY_PHONE_CHANNEL],
-  ["benchday", BENCHDAY_PHONE_CHANNEL],
-  ["phone", BENCHDAY_PHONE_CHANNEL],
-  ["mobile", BENCHDAY_PHONE_CHANNEL],
-  ["local_audio", "local"],
-]);
-
-function normalizeChannelName(value) {
-  const text = String(value ?? "").trim().toLowerCase().replace(/[\s-]+/g, "_");
-  if (!text) return "";
-  return CHANNEL_ALIASES.get(text) || text;
-}
-
-export function normalizeOutputChannels(channels) {
-  const raw = Array.isArray(channels)
-    ? channels
-    : typeof channels === "string"
-      ? channels.split(",")
-      : [];
-  const normalized = raw.map(normalizeChannelName).filter(Boolean);
-  const unique = Array.from(new Set(normalized));
-  return unique.length > 0 ? unique : ["local"];
-}
 
 // voice_id cache: voicePath -> voice_id (avoids re-uploading every call)
 const _voiceIdCache = new Map();
