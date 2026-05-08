@@ -62,7 +62,7 @@ function detectTmuxContext() {
     return {
       pane_id: tmuxPane,
       session_name: info[0],
-      window_index: info[1],
+      window_index: parseInt(info[1], 10),
     };
   } catch {
     return null;
