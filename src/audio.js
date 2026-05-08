@@ -395,7 +395,7 @@ function downloadQwen(phrase, cachePath, config, voiceId) {
   });
 }
 
-async function downloadToCache(phrase, cachePath, config, voicePath, ttsParams, packId, refText) {
+async function downloadToCache(phrase, cachePath, config, voicePath, ttsParams, refText) {
   if (config.tts_backend === "qwen") {
     const voiceId = await registerVoiceWithQwen(config, voicePath, refText);
     return downloadQwen(phrase, cachePath, config, voiceId);
@@ -472,7 +472,6 @@ export async function renderPhraseToFile(phrase, outputPath, config, pack) {
   const tempBase = join(outDir, `.tmp-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`);
   const rawPath = `${tempBase}.raw.wav`;
   const workingPath = `${tempBase}.wav`;
-  const packId = (pack && pack.id) || "_default";
   const voicePath = (pack && pack.voicePath) || config.voice || "default.wav";
   const ttsParams = pack ? pack.tts_params : null;
   const refText = (pack && pack.ref_text) || null;
@@ -481,7 +480,7 @@ export async function renderPhraseToFile(phrase, outputPath, config, pack) {
   const echo = pack ? pack.echo !== false : true;
 
   try {
-    await downloadToCache(phrase, rawPath, config, voicePath, ttsParams, packId, refText);
+    await downloadToCache(phrase, rawPath, config, voicePath, ttsParams, refText);
     if (!existsSync(rawPath)) return false;
 
     renameSync(rawPath, workingPath);
@@ -529,9 +528,12 @@ function postToHub(cachePath, phrase, config, pack, eventContext, channel = BENC
     event: eventContext.event || "",
     source: eventContext.source || "voxlert",
     node: resolveBenchdayNode(config, eventContext, hostname()),
-    channels: [channel],
-    output_channel: channel,
+    node_ip: eventContext.node_ip || "",
+    channel,
     timestamp: Date.now() / 1000,
+    title: eventContext.title || "",
+    description: eventContext.description || "",
+    context: eventContext.context || {},
   });
 
   const { boundary, body } = _buildMultipart(

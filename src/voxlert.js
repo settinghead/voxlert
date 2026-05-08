@@ -9,6 +9,7 @@
 import { resolvePrefix, DEFAULT_PREFIX } from "./prefix.js";
 import { appendFileSync, mkdirSync } from "fs";
 import { hostname } from "os";
+import { execSync } from "child_process";
 import { loadConfig, EVENT_MAP, CONTEXTUAL_EVENTS, FALLBACK_PHRASES } from "./config.js";
 import { extractContext, generatePhrase } from "./llm.js";
 import { speakPhrase } from "./audio.js";
@@ -39,6 +40,32 @@ function logFallback(eventName, reason, detail) {
     appendFileSync(LOG_FILE, line);
   } catch {
     // best-effort logging
+  }
+}
+
+/**
+ * Auto-detect tmux pane context from the environment.
+ * Returns an object with { pane_id, session_name, window_index } when
+ * running inside tmux, otherwise null.
+ */
+function detectTmuxContext() {
+  const tmuxPane = process.env.TMUX_PANE;
+  if (!tmuxPane) return null;
+  try {
+    const info = execSync(
+      "tmux display-message -p '#S:#I:#D'",
+      { encoding: "utf-8", timeout: 2000, stdio: ["pipe", "pipe", "ignore"] },
+    )
+      .trim()
+      .split(":");
+    if (info.length !== 3) return null;
+    return {
+      pane_id: tmuxPane,
+      session_name: info[0],
+      window_index: info[1],
+    };
+  } catch {
+    return null;
   }
 }
 
@@ -93,7 +120,19 @@ export async function processHookEvent(eventData) {
   // Load active voice pack
   const pack = loadPack(config);
   // Event context for output channel dispatch (hub relay, etc.)
-  const eventCtx = { source, category, event: eventName, node: hostname() };
+  const tmuxCtx = detectTmuxContext();
+  const callerCtx = eventData.context && typeof eventData.context === "object"
+    ? eventData.context
+    : {};
+  const eventCtx = {
+    source,
+    category,
+    event: eventName,
+    node: hostname(),
+    title: eventData.title || "",
+    description: eventData.description || "",
+    context: { ...callerCtx, ...(tmuxCtx || {}) },
+  };
   // Allow callers to bypass LLM generation entirely with a pre-built phrase
   if (eventData.phrase_override && typeof eventData.phrase_override === "string") {
     const overridePhrase = eventData.phrase_override.trim();
