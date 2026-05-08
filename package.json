@@ -37,7 +37,7 @@
   "dependencies": {
     "@inquirer/checkbox": "^5.0.0",
     "@inquirer/confirm": "^6.0.8",
-    "@inquirer/input": "^4.1.0",
+    "@inquirer/input": "^5.0.12",
     "@inquirer/select": "^5.1.0",
     "node-notifier": "^10.0.1"
   }
