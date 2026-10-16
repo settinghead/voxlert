@@ -39,6 +39,6 @@
     "@inquirer/confirm": "^6.0.8",
     "@inquirer/input": "^5.1.2",
     "@inquirer/select": "^5.1.0",
-    "node-notifier": "^10.0.1"
+    "node-notifier": "^11.0.0"
   }
 }
